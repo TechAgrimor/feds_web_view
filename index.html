@@ -1,0 +1,1110 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tree Health & Raster Analytics - Al Wajan</title>
+    <!-- Google Fonts: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Leaflet CSS & JS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="health_al_wajan.js"></script>
+
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body,
+        html {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            font-family: 'Inter', sans-serif;
+            background-color: #0b0f19;
+            color: #f8fafc;
+        }
+
+        #map {
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+        }
+
+        .leaflet-image-layer,
+        .leaflet-tile {
+            image-rendering: -webkit-optimize-contrast;
+            image-rendering: crisp-edges;
+            image-rendering: pixelated;
+        }
+
+        /* Top Title Bar */
+        .top-bar {
+            position: absolute;
+            top: 16px;
+            left: 55px;
+            z-index: 1000;
+            background: rgba(15, 23, 42, 0.9);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            backdrop-filter: blur(16px);
+            padding: 10px 18px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
+        }
+
+        .top-title {
+            font-weight: 700;
+            font-size: 0.95rem;
+            color: #38bdf8;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        /* Bottom-Left Coordinates Bar */
+        .coords-bar {
+            position: absolute;
+            bottom: 16px;
+            left: 16px;
+            z-index: 1000;
+            background: rgba(15, 23, 42, 0.92);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            backdrop-filter: blur(14px);
+            padding: 7px 16px;
+            border-radius: 10px;
+            font-family: 'Inter', monospace;
+            font-size: 0.78rem;
+            color: #94a3b8;
+            box-shadow: 0 6px 24px rgba(0, 0, 0, 0.6);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            letter-spacing: 0.01em;
+            user-select: none;
+        }
+
+        .coords-highlight {
+            color: #f8fafc;
+            font-weight: 600;
+        }
+
+        .coords-divider {
+            color: #475569;
+            margin: 0 4px;
+        }
+
+        /* Buttons */
+        .btn {
+            background: rgba(56, 189, 248, 0.15);
+            color: #38bdf8;
+            border: 1px solid rgba(56, 189, 248, 0.3);
+            border-radius: 8px;
+            padding: 7px 14px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            transition: all 0.2s ease;
+            flex: 1;
+        }
+
+        .btn:hover {
+            background: rgba(56, 189, 248, 0.3);
+            box-shadow: 0 0 12px rgba(56, 189, 248, 0.4);
+            transform: translateY(-1px);
+        }
+
+        .btn-secondary {
+            background: rgba(30, 41, 59, 0.7);
+            color: #cbd5e1;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(51, 65, 85, 0.9);
+            color: #fff;
+            box-shadow: 0 0 10px rgba(255, 255, 255, 0.1);
+        }
+
+        /* Map Wrapper */
+        .map-wrapper {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+        }
+
+        /* Right Side Compact Control Panel */
+        .layer-panel {
+            position: absolute;
+            top: 16px;
+            right: 16px;
+            z-index: 1000;
+            width: 340px;
+            background: rgba(15, 23, 42, 0.92);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            backdrop-filter: blur(20px);
+            padding: 16px;
+            border-radius: 16px;
+            box-shadow: 0 14px 35px rgba(0, 0, 0, 0.7);
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+            max-height: calc(100vh - 32px);
+            overflow-y: auto;
+        }
+
+        .layer-panel::-webkit-scrollbar {
+            width: 5px;
+        }
+
+        .layer-panel::-webkit-scrollbar-thumb {
+            background: #334155;
+            border-radius: 3px;
+        }
+
+        .panel-section-title {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            color: #38bdf8;
+            font-weight: 700;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .option-group {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .radio-option {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 7px 10px;
+            background: rgba(30, 41, 59, 0.5);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            user-select: none;
+            font-size: 0.82rem;
+        }
+
+        .radio-option:hover {
+            background: rgba(56, 189, 248, 0.1);
+            border-color: rgba(56, 189, 248, 0.3);
+        }
+
+        .radio-option.active {
+            background: rgba(56, 189, 248, 0.16);
+            border-color: #38bdf8;
+        }
+
+        .radio-option input[type="radio"],
+        .radio-option input[type="checkbox"] {
+            appearance: none;
+            width: 15px;
+            height: 15px;
+            border: 2px solid #64748b;
+            border-radius: 50%;
+            outline: none;
+            cursor: pointer;
+            position: relative;
+            transition: all 0.2s ease;
+            flex-shrink: 0;
+        }
+
+        .radio-option input[type="checkbox"] {
+            border-radius: 4px;
+        }
+
+        .radio-option.active input[type="radio"],
+        .radio-option.active input[type="checkbox"] {
+            border-color: #38bdf8;
+            background: #0f172a;
+        }
+
+        .radio-option.active input[type="radio"]::after {
+            content: '';
+            position: absolute;
+            top: 3px;
+            left: 3px;
+            width: 5px;
+            height: 5px;
+            background: #38bdf8;
+            border-radius: 50%;
+        }
+
+        .radio-option.active input[type="checkbox"]::after {
+            content: '✓';
+            position: absolute;
+            top: -3px;
+            left: 2px;
+            font-size: 11px;
+            color: #38bdf8;
+            font-weight: 800;
+        }
+
+        .radio-label {
+            font-size: 0.82rem;
+            font-weight: 500;
+            color: #f1f5f9;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            flex: 1;
+        }
+
+        /* Sliders Group */
+        .slider-row {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            margin-bottom: 6px;
+        }
+
+        .slider-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.78rem;
+            color: #cbd5e1;
+            font-weight: 600;
+        }
+
+        .slider-input {
+            accent-color: #38bdf8;
+            cursor: pointer;
+            width: 100%;
+            height: 4px;
+        }
+
+        .val-badge {
+            font-size: 0.75rem;
+            font-weight: 700;
+            color: #38bdf8;
+        }
+
+        /* Clean Compact Health Summary Table */
+        .summary-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.78rem;
+            margin-top: 4px;
+        }
+
+        .summary-table th {
+            text-align: left;
+            padding: 6px 8px;
+            color: #94a3b8;
+            font-size: 0.7rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .summary-table td {
+            padding: 6px 8px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+            color: #e2e8f0;
+        }
+
+        .table-row-filter {
+            cursor: pointer;
+            transition: background 0.15s ease;
+        }
+
+        .table-row-filter:hover {
+            background: rgba(56, 189, 248, 0.1);
+        }
+
+        .table-row-filter.selected {
+            background: rgba(56, 189, 248, 0.2);
+            box-shadow: inset 2px 0 0 #38bdf8;
+        }
+
+        .table-row-filter.dimmed {
+            opacity: 0.4;
+        }
+
+        .table-row-filter.dimmed .color-dot {
+            background: #64748b !important;
+            box-shadow: none !important;
+        }
+
+        .color-dot {
+            display: inline-block;
+            width: 9px;
+            height: 9px;
+            border-radius: 50%;
+            margin-right: 6px;
+            box-shadow: 0 0 6px currentColor;
+        }
+
+        .table-pct {
+            font-weight: 700;
+            color: #22c55e;
+        }
+
+        /* Accordion / Breakdown Toggle */
+        .accordion-btn {
+            background: rgba(30, 41, 59, 0.6);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 8px;
+            padding: 8px 10px;
+            color: #38bdf8;
+            font-size: 0.78rem;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            width: 100%;
+            transition: all 0.2s ease;
+        }
+
+        .accordion-btn:hover {
+            background: rgba(30, 41, 59, 0.9);
+            border-color: rgba(56, 189, 248, 0.3);
+        }
+
+        .accordion-content {
+            display: none;
+            flex-direction: column;
+            gap: 6px;
+            padding: 8px;
+            background: rgba(15, 23, 42, 0.5);
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            margin-top: 4px;
+        }
+
+        .accordion-content.show {
+            display: flex;
+        }
+
+        .metric-item {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.75rem;
+        }
+
+        /* Custom Leaflet Popup Styling */
+        .leaflet-popup-content-wrapper {
+            background: rgba(15, 23, 42, 0.94) !important;
+            border: 1px solid rgba(56, 189, 248, 0.3) !important;
+            backdrop-filter: blur(14px) !important;
+            color: #f8fafc !important;
+            border-radius: 14px !important;
+            box-shadow: 0 12px 35px rgba(0, 0, 0, 0.8) !important;
+            padding: 4px !important;
+        }
+
+        .leaflet-popup-tip {
+            background: rgba(15, 23, 42, 0.94) !important;
+            border: 1px solid rgba(56, 189, 248, 0.3) !important;
+        }
+
+        .tree-popup {
+            padding: 10px 12px;
+            min-width: 210px;
+        }
+
+        .tree-popup-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            padding-bottom: 8px;
+            margin-bottom: 10px;
+        }
+
+        .tree-popup-title {
+            font-size: 0.9rem;
+            font-weight: 700;
+            color: #f8fafc;
+        }
+
+        .health-status-tag {
+            font-size: 0.7rem;
+            font-weight: 700;
+            padding: 2px 7px;
+            border-radius: 6px;
+            text-transform: uppercase;
+        }
+
+        .metric-row {
+            margin-bottom: 6px;
+        }
+
+        .metric-info {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.73rem;
+            margin-bottom: 2px;
+        }
+
+        .metric-name {
+            color: #94a3b8;
+            font-weight: 500;
+        }
+
+        .metric-val {
+            font-weight: 700;
+            color: #f1f5f9;
+        }
+
+        .metric-bar-bg {
+            height: 4px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 2px;
+            overflow: hidden;
+        }
+
+        .metric-bar-fill {
+            height: 100%;
+            border-radius: 2px;
+        }
+
+        /* Loading Indicator */
+        .loading-overlay {
+            position: absolute;
+            top: 70px;
+            left: 55px;
+            z-index: 1001;
+            background: rgba(15, 23, 42, 0.92);
+            border: 1px solid rgba(56, 189, 248, 0.4);
+            backdrop-filter: blur(12px);
+            padding: 8px 16px;
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: #38bdf8;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.5);
+            transition: opacity 0.3s ease;
+        }
+
+        .spinner {
+            width: 14px;
+            height: 14px;
+            border: 2px solid rgba(56, 189, 248, 0.3);
+            border-top-color: #38bdf8;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Clean Top Title Bar -->
+    <div class="top-bar">
+        <span class="top-title">
+            🌲 Al Wajan Farm - Tree Health Analytics
+        </span>
+    </div>
+
+    <!-- Bottom-Left Coordinates Bar -->
+    <div class="coords-bar" id="coordsBar">
+        <span>Map CRS: <span class="coords-highlight">WGS84 (EPSG:4326)</span></span>
+        <span class="coords-divider">|</span>
+        <span>Lat: <span id="lblLat" class="coords-highlight">23.65519</span></span>
+        <span class="coords-divider">|</span>
+        <span>Lon: <span id="lblLon" class="coords-highlight">55.55691</span></span>
+        <span class="coords-divider">|</span>
+        <span>Zoom: <span id="lblZoom" class="coords-highlight">18</span></span>
+    </div>
+
+    <!-- Loading Indicator -->
+    <div id="loadingOverlay" class="loading-overlay">
+        <div class="spinner"></div>
+        <span>Loading Tree Health Dataset (5,944 Crowns)...</span>
+    </div>
+
+    <div class="map-wrapper">
+        <!-- Right Side Control Panel -->
+        <div class="layer-panel">
+
+            <!-- Base Map Selection -->
+            <div>
+                <div class="panel-section-title">Base Map Style</div>
+                <div class="option-group" id="baseMapOptionsGroup">
+                    <label class="radio-option" id="base-sat-streets">
+                        <input type="radio" name="baseMapToggle" value="sat-streets">
+                        <span class="radio-label">🛰️ Satellite (Mapbox)</span>
+                    </label>
+                    <label class="radio-option active" id="base-dark">
+                        <input type="radio" name="baseMapToggle" value="dark" checked>
+                        <span class="radio-label">🌃 Mapbox Dark</span>
+                    </label>
+                    <label class="radio-option" id="base-streets">
+                        <input type="radio" name="baseMapToggle" value="streets">
+                        <span class="radio-label">🗺️ OpenStreetMap / Streets</span>
+                    </label>
+                </div>
+            </div>
+
+            <div style="height: 1px; background: rgba(255,255,255,0.08);"></div>
+
+            <!-- Layer Toggles -->
+            <div>
+                <div class="panel-section-title">Active Layers</div>
+                <div class="option-group">
+                    <label class="radio-option active" id="opt-geojson-toggle">
+                        <input type="checkbox" id="geojsonLayerToggle" checked>
+                        <span class="radio-label">
+                            <span class="color-dot" style="background:#22c55e; color:#22c55e;"></span>
+                            Tree Crown Polygons (5,944)
+                        </span>
+                    </label>
+                    <label class="radio-option active" id="opt-tiled-toggle">
+                        <input type="checkbox" id="tiledLayerToggle" checked>
+                        <span class="radio-label">
+                            <span class="color-dot" style="background:#38bdf8; color:#38bdf8;"></span>
+                            High-Res Raster Overlay
+                        </span>
+                    </label>
+                </div>
+            </div>
+
+            <div style="height: 1px; background: rgba(255,255,255,0.08);"></div>
+
+            <!-- Opacity Sliders -->
+            <div>
+                <div class="panel-section-title">Fill Opacity Controls</div>
+                
+                <div class="slider-row">
+                    <div class="slider-header">
+                        <span>🌓 Tree Crowns Opacity</span>
+                        <span id="treeOpacityVal" class="val-badge">65%</span>
+                    </div>
+                    <input type="range" id="treeOpacitySlider" class="slider-input" min="0" max="1" step="0.05" value="0.65">
+                </div>
+
+                <div class="slider-row" style="margin-top: 6px;">
+                    <div class="slider-header">
+                        <span>🖼️ Raster Layer Opacity</span>
+                        <span id="opacityVal" class="val-badge">100%</span>
+                    </div>
+                    <input type="range" id="opacitySlider" class="slider-input" min="0" max="1" step="0.05" value="1">
+                </div>
+            </div>
+
+            <div style="height: 1px; background: rgba(255,255,255,0.08);"></div>
+
+            <!-- Tree Health Summary Table -->
+            <div>
+                <div class="panel-section-title">
+                    <span>📊 Tree Health Summary</span>
+                    <span style="font-size: 0.68rem; color: #38bdf8; cursor: pointer; display: flex; align-items: center; gap: 3px;" id="resetFilterBtn">🔄 Reset Filter</span>
+                </div>
+                
+                <table class="summary-table">
+                    <thead>
+                        <tr>
+                            <th>Health Class</th>
+                            <th style="text-align: right;">Count</th>
+                            <th style="text-align: right;">Ratio</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr class="table-row-filter" data-class="Vigorous">
+                            <td><span class="color-dot" style="background:#10b981; color:#10b981;"></span>Vigorous</td>
+                            <td style="text-align: right; font-weight: 600;" id="tblCount-Vigorous">0</td>
+                            <td style="text-align: right;" class="table-pct" id="tblPct-Vigorous">0%</td>
+                        </tr>
+                        <tr class="table-row-filter" data-class="Normal">
+                            <td><span class="color-dot" style="background:#22c55e; color:#22c55e;"></span>Normal</td>
+                            <td style="text-align: right; font-weight: 600;" id="tblCount-Normal">0</td>
+                            <td style="text-align: right;" class="table-pct" id="tblPct-Normal">0%</td>
+                        </tr>
+                        <tr class="table-row-filter" data-class="Moderate">
+                            <td><span class="color-dot" style="background:#eab308; color:#eab308;"></span>Moderate</td>
+                            <td style="text-align: right; font-weight: 600;" id="tblCount-Moderate">0</td>
+                            <td style="text-align: right;" class="table-pct" id="tblPct-Moderate">0%</td>
+                        </tr>
+                        <tr class="table-row-filter" data-class="Sparse">
+                            <td><span class="color-dot" style="background:#f97316; color:#f97316;"></span>Sparse</td>
+                            <td style="text-align: right; font-weight: 600;" id="tblCount-Sparse">0</td>
+                            <td style="text-align: right;" class="table-pct" id="tblPct-Sparse">0%</td>
+                        </tr>
+                        <tr class="table-row-filter" data-class="Defoliated">
+                            <td><span class="color-dot" style="background:#ef4444; color:#ef4444;"></span>Defoliated</td>
+                            <td style="text-align: right; font-weight: 600;" id="tblCount-Defoliated">0</td>
+                            <td style="text-align: right;" class="table-pct" id="tblPct-Defoliated">0%</td>
+                        </tr>
+                    </tbody>
+                    <tfoot>
+                        <tr style="border-top: 1px solid rgba(255, 255, 255, 0.15); font-weight: 700;">
+                            <td style="padding-top: 8px; color: #f8fafc; font-weight: 700;">Total Crowns</td>
+                            <td style="text-align: right; padding-top: 8px; font-weight: 700; color: #f8fafc;" id="tblCount-Total">0</td>
+                            <td style="text-align: right; padding-top: 8px; font-weight: 700; color: #38bdf8;" id="tblPct-Total">100%</td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+
+            <!-- Collapsible Spectral Metrics -->
+            <div>
+                <button class="accordion-btn" id="metricsAccordionBtn">
+                    <span>▼ 📑 View Spectral Metrics Averages</span>
+                </button>
+                <div class="accordion-content" id="metricsAccordionContent">
+                    <div class="metric-item">
+                        <span style="color: #94a3b8;">Field Avg NDVI:</span>
+                        <span style="font-weight: 700; color: #22c55e;" id="avgNDVI">0.384</span>
+                    </div>
+                    <div class="metric-item">
+                        <span style="color: #94a3b8;">Field Avg LCI:</span>
+                        <span style="font-weight: 700; color: #38bdf8;" id="avgLCI">0.058</span>
+                    </div>
+                    <div class="metric-item">
+                        <span style="color: #94a3b8;">Field Avg NDRE:</span>
+                        <span style="font-weight: 700; color: #a855f7;" id="avgNDRE">0.051</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Bounds Action Buttons -->
+            <div style="display: flex; gap: 8px;">
+                <button id="fitTreeBoundsBtn" class="btn">🌳 Fit Tree Crowns</button>
+                <button id="resetBoundsBtn" class="btn btn-secondary">🎯 Fit Raster</button>
+            </div>
+
+        </div>
+
+        <!-- Leaflet Map Container -->
+        <div id="map"></div>
+    </div>
+
+    <script>
+        // Map Center & Bounding Box
+        const rasterBounds = [[23.651751, 55.550646], [23.658631, 55.563173]];
+        const mapCenter = [23.655191, 55.556909];
+
+        // Canvas Renderer for high performance with 5,944 GeoJSON polygons
+        const canvasRenderer = L.canvas({ padding: 0.5 });
+
+        const map = L.map('map', {
+            center: mapCenter,
+            zoom: 18,
+            minZoom: 15,
+            maxZoom: 24,
+            zoomControl: true,
+            renderer: canvasRenderer
+        });
+
+        const mapboxToken = localStorage.getItem('mapbox_token') || "pk.eyJ1IjoiZ2FuZXNzYTA3MCIsImEiOiJjbWR3dHVlOW0xOXJ1Mmxva2Yzdmh6a3J1In0.BoJYhzzN1242F9yvQOtvXQ";
+
+        // Base Maps
+        const baseMaps = {
+            "sat-streets": L.tileLayer(`https://api.mapbox.com/styles/v1/mapbox/satellite-streets-v12/tiles/{z}/{x}/{y}?access_token=${mapboxToken}`, {
+                tileSize: 512, zoomOffset: -1, maxZoom: 22, attribution: '&copy; Mapbox &copy; OpenStreetMap'
+            }),
+            "dark": L.tileLayer(`https://api.mapbox.com/styles/v1/mapbox/dark-v11/tiles/{z}/{x}/{y}?access_token=${mapboxToken}`, {
+                tileSize: 512, zoomOffset: -1, maxZoom: 22, attribution: '&copy; Mapbox &copy; OpenStreetMap'
+            }),
+            "streets": L.tileLayer(`https://api.mapbox.com/styles/v1/mapbox/streets-v12/tiles/{z}/{x}/{y}?access_token=${mapboxToken}`, {
+                tileSize: 512, zoomOffset: -1, maxZoom: 22, attribution: '&copy; Mapbox &copy; OpenStreetMap'
+            })
+        };
+
+        let currentBaseMapKey = "dark";
+        baseMaps[currentBaseMapKey].addTo(map);
+
+        // Base Map Toggle Listener
+        document.querySelectorAll('input[name="baseMapToggle"]').forEach(radio => {
+            radio.addEventListener('change', (e) => {
+                const newKey = e.target.value;
+                document.querySelectorAll('#baseMapOptionsGroup .radio-option').forEach(el => el.classList.remove('active'));
+                e.target.closest('.radio-option').classList.add('active');
+
+                if (baseMaps[currentBaseMapKey] && map.hasLayer(baseMaps[currentBaseMapKey])) {
+                    map.removeLayer(baseMaps[currentBaseMapKey]);
+                }
+                if (baseMaps[newKey]) {
+                    map.addLayer(baseMaps[newKey]);
+                    currentBaseMapKey = newKey;
+                }
+            });
+        });
+
+        // Tiled Raster Overlay
+        let tiledLayer = L.tileLayer('tiles/{z}/{x}/{y}.png', {
+            tms: true,
+            minZoom: 15,
+            maxZoom: 24,
+            maxNativeZoom: 22,
+            opacity: 1.0,
+            zIndex: 10,
+            attribution: 'High-Res Raster Tiles'
+        });
+        tiledLayer.addTo(map);
+
+        // Raster Checkbox Toggle Listener
+        const tiledLayerToggle = document.getElementById('tiledLayerToggle');
+        tiledLayerToggle.addEventListener('change', (e) => {
+            const isChecked = e.target.checked;
+            const container = document.getElementById('opt-tiled-toggle');
+            if (isChecked) {
+                container.classList.add('active');
+                if (tiledLayer && !map.hasLayer(tiledLayer)) map.addLayer(tiledLayer);
+            } else {
+                container.classList.remove('active');
+                if (tiledLayer && map.hasLayer(tiledLayer)) map.removeLayer(tiledLayer);
+            }
+        });
+
+        // Opacity Slider for Raster Overlay
+        const opacitySlider = document.getElementById('opacitySlider');
+        const opacityVal = document.getElementById('opacityVal');
+
+        opacitySlider.addEventListener('input', (e) => {
+            const val = parseFloat(e.target.value);
+            opacityVal.textContent = Math.round(val * 100) + '%';
+            if (tiledLayer) tiledLayer.setOpacity(val);
+        });
+
+        // Fit Bounds Buttons
+        document.getElementById('resetBoundsBtn').addEventListener('click', () => {
+            map.fitBounds(rasterBounds);
+        });
+
+        // Dynamic Bottom-Left Coordinates Updater
+        const lblLat = document.getElementById('lblLat');
+        const lblLon = document.getElementById('lblLon');
+        const lblZoom = document.getElementById('lblZoom');
+
+        map.on('mousemove', (e) => {
+            lblLat.textContent = e.latlng.lat.toFixed(5);
+            lblLon.textContent = e.latlng.lng.toFixed(5);
+        });
+
+        map.on('zoomend', () => {
+            lblZoom.textContent = map.getZoom();
+        });
+
+        // Accordion Breakdown Toggle
+        const accordionBtn = document.getElementById('metricsAccordionBtn');
+        const accordionContent = document.getElementById('metricsAccordionContent');
+        accordionBtn.addEventListener('click', () => {
+            accordionContent.classList.toggle('show');
+            const isShown = accordionContent.classList.contains('show');
+            accordionBtn.querySelector('span').textContent = isShown ? '▲ 📑 Hide Spectral Metrics Averages' : '▼ 📑 View Spectral Metrics Averages';
+        });
+
+        // -------------------------------------------------------------
+        // TREE HEALTH GEOJSON OVERLAY LOGIC
+        // -------------------------------------------------------------
+        const healthColors = {
+            'Vigorous':  { fill: '#10b981', stroke: '#047857' },
+            'Normal':    { fill: '#22c55e', stroke: '#15803d' },
+            'Moderate':  { fill: '#eab308', stroke: '#a16207' },
+            'Sparse':    { fill: '#f97316', stroke: '#c2410c' },
+            'Defoliated': { fill: '#ef4444', stroke: '#b91c1c' }
+        };
+
+        let geojsonLayer = null;
+        let geojsonData = null;
+        let selectedHealthFilters = new Set(); // Multi-select Set for active health classes
+        let treeFillOpacity = 0.65;
+        let treeBounds = null;
+
+        const treeOpacitySlider = document.getElementById('treeOpacitySlider');
+        const treeOpacityVal = document.getElementById('treeOpacityVal');
+
+        treeOpacitySlider.addEventListener('input', (e) => {
+            treeFillOpacity = parseFloat(e.target.value);
+            treeOpacityVal.textContent = Math.round(treeFillOpacity * 100) + '%';
+            if (geojsonLayer) {
+                geojsonLayer.setStyle(feature => getFeatureStyle(feature));
+            }
+        });
+
+        function getFeatureStyle(feature) {
+            const cls = feature.properties.Health_Cls || 'Normal';
+            const colors = healthColors[cls] || healthColors['Normal'];
+            
+            // If no filter selected or all 5 classes selected, show normal view
+            if (selectedHealthFilters.size === 0 || selectedHealthFilters.size === 5) {
+                return {
+                    fillColor: colors.fill,
+                    fillOpacity: treeFillOpacity,
+                    color: colors.stroke,
+                    weight: 1,
+                    renderer: canvasRenderer
+                };
+            }
+
+            if (selectedHealthFilters.has(cls)) {
+                return {
+                    fillColor: colors.fill,
+                    fillOpacity: Math.min(1.0, treeFillOpacity + 0.15),
+                    color: '#ffffff',
+                    weight: 1.5,
+                    renderer: canvasRenderer
+                };
+            } else {
+                return {
+                    fillColor: '#475569',
+                    fillOpacity: 0.2,
+                    color: '#334155',
+                    weight: 0.5,
+                    renderer: canvasRenderer
+                };
+            }
+        }
+
+        function createTreePopupContent(props) {
+            const crownId = props.crown_id || props.fid || 'N/A';
+            const cls = props.Health_Cls || 'Normal';
+            const condition = props.Condition || 'Healthy';
+            const colors = healthColors[cls] || healthColors['Normal'];
+
+            const ndvi = props.NDVI_mean != null ? props.NDVI_mean.toFixed(3) : 'N/A';
+            const lci = props.LCI_mean != null ? props.LCI_mean.toFixed(3) : 'N/A';
+            const ndre = props.NDRE_mean != null ? props.NDRE_mean.toFixed(3) : 'N/A';
+
+            const ndviPct = Math.min(100, Math.max(0, (props.NDVI_mean || 0) * 100));
+            const lciPct = Math.min(100, Math.max(0, (props.LCI_mean || 0) * 200));
+            const ndrePct = Math.min(100, Math.max(0, (props.NDRE_mean || 0) * 200));
+
+            return `
+                <div class="tree-popup">
+                    <div class="tree-popup-header">
+                        <span class="tree-popup-title">Tree Crown #${crownId}</span>
+                        <span class="health-status-tag" style="background: ${colors.fill}25; color: ${colors.fill}; border: 1px solid ${colors.fill}60;">
+                            ${cls}
+                        </span>
+                    </div>
+
+                    <div class="metric-row" style="margin-bottom: 8px;">
+                        <span style="font-size: 0.72rem; color: #94a3b8;">Condition: </span>
+                        <span style="font-size: 0.78rem; font-weight: 700; color: ${condition === 'Healthy' ? '#22c55e' : '#ef4444'};">
+                            ${condition}
+                        </span>
+                    </div>
+
+                    <div class="metric-row">
+                        <div class="metric-info">
+                            <span class="metric-name">NDVI Mean:</span>
+                            <span class="metric-val">${ndvi}</span>
+                        </div>
+                        <div class="metric-bar-bg">
+                            <div class="metric-bar-fill" style="width: ${ndviPct}%; background: ${colors.fill};"></div>
+                        </div>
+                    </div>
+
+                    <div class="metric-row">
+                        <div class="metric-info">
+                            <span class="metric-name">LCI Mean:</span>
+                            <span class="metric-val">${lci}</span>
+                        </div>
+                        <div class="metric-bar-bg">
+                            <div class="metric-bar-fill" style="width: ${lciPct}%; background: #38bdf8;"></div>
+                        </div>
+                    </div>
+
+                    <div class="metric-row">
+                        <div class="metric-info">
+                            <span class="metric-name">NDRE Mean:</span>
+                            <span class="metric-val">${ndre}</span>
+                        </div>
+                        <div class="metric-bar-bg">
+                            <div class="metric-bar-fill" style="width: ${ndrePct}%; background: #a855f7;"></div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function loadGeoJSONData() {
+            if (window.healthAlWajanData) {
+                return Promise.resolve(window.healthAlWajanData);
+            }
+            return fetch('health_al_wajan.geojson').then(res => {
+                if (!res.ok) throw new Error('Network response was not ok');
+                return res.json();
+            });
+        }
+
+        loadGeoJSONData()
+            .then(data => {
+                geojsonData = data;
+
+                // Calculate Summary Statistics
+                const counts = { 'Vigorous': 0, 'Normal': 0, 'Moderate': 0, 'Sparse': 0, 'Defoliated': 0 };
+                let totalTrees = data.features.length;
+                let sumNDVI = 0, sumLCI = 0, sumNDRE = 0;
+
+                data.features.forEach(f => {
+                    const cls = f.properties.Health_Cls;
+                    if (counts[cls] !== undefined) counts[cls]++;
+                    sumNDVI += (f.properties.NDVI_mean || 0);
+                    sumLCI += (f.properties.LCI_mean || 0);
+                    sumNDRE += (f.properties.NDRE_mean || 0);
+                });
+
+                // Update Table Counters & Ratios
+                Object.keys(counts).forEach(key => {
+                    const countEl = document.getElementById(`tblCount-${key}`);
+                    const pctEl = document.getElementById(`tblPct-${key}`);
+                    if (countEl) countEl.textContent = counts[key].toLocaleString();
+                    if (pctEl) {
+                        const pct = ((counts[key] / totalTrees) * 100).toFixed(1);
+                        pctEl.textContent = pct + '%';
+                    }
+                });
+
+                // Update Total Row
+                const totalCountEl = document.getElementById('tblCount-Total');
+                const totalPctEl = document.getElementById('tblPct-Total');
+                if (totalCountEl) totalCountEl.textContent = totalTrees.toLocaleString();
+                if (totalPctEl) totalPctEl.textContent = '100%';
+
+                // Update Field Averages
+                document.getElementById('avgNDVI').textContent = (sumNDVI / totalTrees).toFixed(3);
+                document.getElementById('avgLCI').textContent = (sumLCI / totalTrees).toFixed(3);
+                document.getElementById('avgNDRE').textContent = (sumNDRE / totalTrees).toFixed(3);
+
+                // Create Leaflet GeoJSON Layer
+                geojsonLayer = L.geoJSON(data, {
+                    renderer: canvasRenderer,
+                    style: getFeatureStyle,
+                    onEachFeature: (feature, layer) => {
+                        layer.bindPopup(() => createTreePopupContent(feature.properties));
+
+                        layer.on('mouseover', function () {
+                            this.setStyle({
+                                weight: 3,
+                                color: '#ffffff',
+                                fillOpacity: 0.9
+                            });
+                        });
+                        layer.on('mouseout', function () {
+                            geojsonLayer.resetStyle(this);
+                        });
+                    }
+                });
+
+                geojsonLayer.addTo(map);
+                treeBounds = geojsonLayer.getBounds();
+
+                // Hide loading overlay
+                const loadingOverlay = document.getElementById('loadingOverlay');
+                loadingOverlay.style.opacity = '0';
+                setTimeout(() => loadingOverlay.remove(), 300);
+            })
+            .catch(err => {
+                console.error('Error loading GeoJSON:', err);
+                const loadingOverlay = document.getElementById('loadingOverlay');
+                loadingOverlay.innerHTML = '<span style="color: #ef4444;">⚠️ GeoJSON layer could not be loaded</span>';
+            });
+
+        // Fit Tree Crowns Button
+        document.getElementById('fitTreeBoundsBtn').addEventListener('click', () => {
+            if (treeBounds && treeBounds.isValid()) {
+                map.fitBounds(treeBounds);
+            } else {
+                map.fitBounds(rasterBounds);
+            }
+        });
+
+        // GeoJSON Checkbox Toggle
+        const geojsonLayerToggle = document.getElementById('geojsonLayerToggle');
+        geojsonLayerToggle.addEventListener('change', (e) => {
+            const isChecked = e.target.checked;
+            const container = document.getElementById('opt-geojson-toggle');
+            if (isChecked) {
+                container.classList.add('active');
+                if (geojsonLayer && !map.hasLayer(geojsonLayer)) map.addLayer(geojsonLayer);
+            } else {
+                container.classList.remove('active');
+                if (geojsonLayer && map.hasLayer(geojsonLayer)) map.removeLayer(geojsonLayer);
+            }
+        });
+
+        function updateFilterState() {
+            const isFilterActive = (selectedHealthFilters.size > 0 && selectedHealthFilters.size < 5);
+
+            document.querySelectorAll('.table-row-filter').forEach(el => {
+                const cls = el.getAttribute('data-class');
+                if (!isFilterActive) {
+                    el.classList.remove('selected', 'dimmed');
+                } else if (selectedHealthFilters.has(cls)) {
+                    el.classList.add('selected');
+                    el.classList.remove('dimmed');
+                } else {
+                    el.classList.remove('selected');
+                    el.classList.add('dimmed');
+                }
+            });
+
+            // Update Total Row based on active filters
+            const totalCountEl = document.getElementById('tblCount-Total');
+            const totalPctEl = document.getElementById('tblPct-Total');
+            if (totalCountEl && totalPctEl && geojsonData) {
+                if (!isFilterActive) {
+                    totalCountEl.textContent = geojsonData.features.length.toLocaleString();
+                    totalPctEl.textContent = '100%';
+                } else {
+                    let filteredCount = 0;
+                    geojsonData.features.forEach(f => {
+                        if (selectedHealthFilters.has(f.properties.Health_Cls)) {
+                            filteredCount++;
+                        }
+                    });
+                    totalCountEl.textContent = filteredCount.toLocaleString();
+                    totalPctEl.textContent = ((filteredCount / geojsonData.features.length) * 100).toFixed(1) + '%';
+                }
+            }
+
+            if (geojsonLayer) {
+                geojsonLayer.setStyle(feature => getFeatureStyle(feature));
+            }
+        }
+
+        // Health Summary Table Row Filter Click Listeners (Multi-Select Toggle)
+        document.querySelectorAll('.table-row-filter').forEach(row => {
+            row.addEventListener('click', () => {
+                const cls = row.getAttribute('data-class');
+                if (selectedHealthFilters.has(cls)) {
+                    selectedHealthFilters.delete(cls);
+                } else {
+                    selectedHealthFilters.add(cls);
+                }
+                updateFilterState();
+            });
+        });
+
+        // Reset Filter Button
+        document.getElementById('resetFilterBtn').addEventListener('click', () => {
+            selectedHealthFilters.clear();
+            updateFilterState();
+        });
+    </script>
+</body>
+
+</html>
