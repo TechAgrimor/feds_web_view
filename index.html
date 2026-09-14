@@ -12,7 +12,7 @@
     <!-- Leaflet CSS & JS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <script src="health_al_wajan.js"></script>
+    <script src="2nd_batch.js"></script>
 
     <style>
         * {
@@ -540,7 +540,7 @@
     <!-- Loading Indicator -->
     <div id="loadingOverlay" class="loading-overlay">
         <div class="spinner"></div>
-        <span>Loading Tree Health Dataset (5,944 Crowns)...</span>
+        <span id="loadingMsg">Loading Tree Health Dataset...</span>
     </div>
 
     <div class="map-wrapper">
@@ -576,7 +576,7 @@
                         <input type="checkbox" id="geojsonLayerToggle" checked>
                         <span class="radio-label">
                             <span class="color-dot" style="background:#22c55e; color:#22c55e;"></span>
-                            Tree Crown Polygons (5,944)
+                            Tree Crown Polygons <span id="lblTreeCrownCount"></span>
                         </span>
                     </label>
                     <label class="radio-option active" id="opt-tiled-toggle">
@@ -944,7 +944,7 @@
             if (window.healthAlWajanData) {
                 return Promise.resolve(window.healthAlWajanData);
             }
-            return fetch('health_al_wajan.geojson').then(res => {
+            return fetch('2nd batch.geojson').then(res => {
                 if (!res.ok) throw new Error('Network response was not ok');
                 return res.json();
             });
@@ -957,6 +957,10 @@
                 // Calculate Summary Statistics
                 const counts = { 'Vigorous': 0, 'Normal': 0, 'Moderate': 0, 'Sparse': 0, 'Defoliated': 0 };
                 let totalTrees = data.features.length;
+                const loadingMsgEl = document.getElementById('loadingMsg');
+                if (loadingMsgEl) loadingMsgEl.textContent = `Loading Tree Health Dataset (${totalTrees.toLocaleString()} Crowns)...`;
+                const crownCountEl = document.getElementById('lblTreeCrownCount');
+                if (crownCountEl) crownCountEl.textContent = `(${totalTrees.toLocaleString()})`;
                 let sumNDVI = 0, sumLCI = 0, sumNDRE = 0;
 
                 data.features.forEach(f => {
