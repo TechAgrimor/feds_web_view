@@ -12,7 +12,7 @@
     <!-- Leaflet CSS & JS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <script src="2nd_batch.js"></script>
+    <script src="last.js"></script>
 
     <style>
         * {
@@ -878,18 +878,23 @@
         }
 
         function createTreePopupContent(props) {
-            const crownId = props.crown_id || props.fid || 'N/A';
+            const crownId = props.crown_id || props.fid || (props.File_Name ? props.File_Name.replace('.png', '').replace(/^F\d+_TREE_/, '') : 'N/A');
             const cls = props.Health_Cls || 'Normal';
             const condition = props.Condition || 'Healthy';
             const colors = healthColors[cls] || healthColors['Normal'];
 
-            const ndvi = props.NDVI_mean != null ? props.NDVI_mean.toFixed(3) : 'N/A';
+            const ndviVal = props.NDVI_mean != null ? props.NDVI_mean : (props.NDVI_mea_1 != null ? props.NDVI_mea_1 : null);
+            const ndvi = ndviVal != null ? ndviVal.toFixed(3) : 'N/A';
             const lci = props.LCI_mean != null ? props.LCI_mean.toFixed(3) : 'N/A';
             const ndre = props.NDRE_mean != null ? props.NDRE_mean.toFixed(3) : 'N/A';
 
-            const ndviPct = Math.min(100, Math.max(0, (props.NDVI_mean || 0) * 100));
+            const ndviPct = Math.min(100, Math.max(0, (ndviVal || 0) * 100));
             const lciPct = Math.min(100, Math.max(0, (props.LCI_mean || 0) * 200));
             const ndrePct = Math.min(100, Math.max(0, (props.NDRE_mean || 0) * 200));
+
+            const treeSpec = props.Tree_Spec || props.TREE_SPECI || null;
+            const treeType = props.Tree_Type || props.TREE_TYPE_ || null;
+            const heightVal = props.Height_Tre != null ? props.Height_Tre.toFixed(1) : (props.HEIGHT_M != null && props.HEIGHT_M > 0 ? props.HEIGHT_M.toFixed(1) : null);
 
             return `
                 <div class="tree-popup">
@@ -900,12 +905,19 @@
                         </span>
                     </div>
 
-                    <div class="metric-row" style="margin-bottom: 8px;">
+                    <div class="metric-row" style="margin-bottom: 6px;">
                         <span style="font-size: 0.72rem; color: #94a3b8;">Condition: </span>
                         <span style="font-size: 0.78rem; font-weight: 700; color: ${condition === 'Healthy' ? '#22c55e' : '#ef4444'};">
                             ${condition}
                         </span>
                     </div>
+
+                    ${(treeSpec || treeType || heightVal) ? `
+                    <div class="metric-row" style="margin-bottom: 8px; font-size: 0.72rem; display: flex; flex-direction: column; gap: 2px; background: rgba(255,255,255,0.04); padding: 4px 6px; border-radius: 6px;">
+                        ${treeType ? `<div><span style="color:#94a3b8;">Type: </span><span style="font-weight:600; color:#38bdf8;">${treeType}</span></div>` : ''}
+                        ${treeSpec ? `<div><span style="color:#94a3b8;">Species: </span><span style="font-weight:600; color:#f8fafc; font-style: italic;">${treeSpec}</span></div>` : ''}
+                        ${heightVal ? `<div><span style="color:#94a3b8;">Height: </span><span style="font-weight:600; color:#e2e8f0;">${heightVal} m</span></div>` : ''}
+                    </div>` : ''}
 
                     <div class="metric-row">
                         <div class="metric-info">
@@ -944,7 +956,7 @@
             if (window.healthAlWajanData) {
                 return Promise.resolve(window.healthAlWajanData);
             }
-            return fetch('2nd batch.geojson').then(res => {
+            return fetch('last.geojson').then(res => {
                 if (!res.ok) throw new Error('Network response was not ok');
                 return res.json();
             });
@@ -966,7 +978,8 @@
                 data.features.forEach(f => {
                     const cls = f.properties.Health_Cls;
                     if (counts[cls] !== undefined) counts[cls]++;
-                    sumNDVI += (f.properties.NDVI_mean || 0);
+                    const ndviVal = f.properties.NDVI_mean != null ? f.properties.NDVI_mean : (f.properties.NDVI_mea_1 || 0);
+                    sumNDVI += ndviVal;
                     sumLCI += (f.properties.LCI_mean || 0);
                     sumNDRE += (f.properties.NDRE_mean || 0);
                 });
