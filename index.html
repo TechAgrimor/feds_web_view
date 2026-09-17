@@ -883,35 +883,37 @@
             }
         }
 
+        const STANDARD_POINT_RADIUS = 4.5; // Standard uniform size for all tree points
+
         function getPointStyle(feature) {
             const cls = feature.properties.Health_Cls || 'Normal';
             const colors = healthColors[cls] || healthColors['Normal'];
 
             if (selectedHealthFilters.size === 0 || selectedHealthFilters.size === 5) {
                 return {
-                    radius: 5,
+                    radius: STANDARD_POINT_RADIUS,
                     fillColor: colors.fill,
                     fillOpacity: Math.min(1.0, treeFillOpacity + 0.2),
                     color: colors.stroke,
-                    weight: 1.5,
+                    weight: 1.0,
                     renderer: canvasRenderer
                 };
             }
 
             if (selectedHealthFilters.has(cls)) {
                 return {
-                    radius: 6.5,
+                    radius: STANDARD_POINT_RADIUS,
                     fillColor: colors.fill,
                     fillOpacity: 1.0,
                     color: '#ffffff',
-                    weight: 2,
+                    weight: 1.5,
                     renderer: canvasRenderer
                 };
             } else {
                 return {
-                    radius: 3,
+                    radius: STANDARD_POINT_RADIUS,
                     fillColor: '#475569',
-                    fillOpacity: 0.2,
+                    fillOpacity: 0.15,
                     color: '#334155',
                     weight: 0.5,
                     renderer: canvasRenderer
@@ -1136,8 +1138,8 @@
 
                         layer.on('mouseover', function () {
                             this.setStyle({
-                                radius: 8,
-                                weight: 3,
+                                radius: STANDARD_POINT_RADIUS + 1,
+                                weight: 2,
                                 color: '#ffffff',
                                 fillOpacity: 1.0
                             });
