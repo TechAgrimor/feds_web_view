@@ -1016,13 +1016,32 @@
         }
 
         function loadGeoJSONData() {
-            if (window.healthAlWajanData) {
+            if (window.healthAlWajanData && window.healthAlWajanData.features) {
                 return Promise.resolve(window.healthAlWajanData);
             }
-            return fetch('last.geojson').then(res => {
-                if (!res.ok) throw new Error('Network response was not ok');
-                return res.json();
-            });
+            // Fallback 1: Try fetching last.geojson
+            return fetch('./last.geojson')
+                .then(res => {
+                    if (!res.ok) throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+                    return res.json();
+                })
+                .catch(err => {
+                    console.warn('last.geojson fetch failed, trying last.js fallback parsing:', err);
+                    // Fallback 2: Try fetching last.js text and extracting JSON object
+                    return fetch('./last.js')
+                        .then(res => {
+                            if (!res.ok) throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+                            return res.text();
+                        })
+                        .then(text => {
+                            const jsonStart = text.indexOf('{');
+                            const jsonEnd = text.lastIndexOf('}');
+                            if (jsonStart !== -1 && jsonEnd !== -1) {
+                                return JSON.parse(text.slice(jsonStart, jsonEnd + 1));
+                            }
+                            throw new Error('Could not parse JSON structure from last.js');
+                        });
+                });
         }
 
         loadGeoJSONData()
