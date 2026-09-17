@@ -8,7 +8,8 @@
     <!-- Google Fonts: Inter -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet">
     <!-- Leaflet CSS & JS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -513,7 +514,9 @@
         }
 
         @keyframes spin {
-            to { transform: rotate(360deg); }
+            to {
+                transform: rotate(360deg);
+            }
         }
     </style>
 </head>
@@ -572,25 +575,18 @@
             <div>
                 <div class="panel-section-title">Active Layers</div>
                 <div class="option-group">
+                    <label class="radio-option active" id="opt-geojson-toggle">
+                        <input type="checkbox" id="geojsonLayerToggle" checked>
+                        <span class="radio-label">
+                            <span class="color-dot" style="background:#22c55e; color:#22c55e;"></span>
+                            Tree Crown Polygons <span id="lblTreeCrownCount"></span>
+                        </span>
+                    </label>
                     <label class="radio-option active" id="opt-tiled-toggle">
                         <input type="checkbox" id="tiledLayerToggle" checked>
                         <span class="radio-label">
                             <span class="color-dot" style="background:#38bdf8; color:#38bdf8;"></span>
-                            L3 Raster
-                        </span>
-                    </label>
-                    <label class="radio-option active" id="opt-points-toggle">
-                        <input type="checkbox" id="pointsLayerToggle" checked>
-                        <span class="radio-label">
-                            <span class="color-dot" style="background:#22c55e; color:#22c55e;"></span>
-                            Tree Points <span id="lblTreePointCount"></span>
-                        </span>
-                    </label>
-                    <label class="radio-option" id="opt-crowns-toggle">
-                        <input type="checkbox" id="crownsLayerToggle">
-                        <span class="radio-label">
-                            <span class="color-dot" style="background:#a855f7; color:#a855f7;"></span>
-                            Tree Crowns <span id="lblTreeCrownCount"></span>
+                            High-Res Raster Overlay
                         </span>
                     </label>
                 </div>
@@ -601,13 +597,14 @@
             <!-- Opacity Sliders -->
             <div>
                 <div class="panel-section-title">Fill Opacity Controls</div>
-                
+
                 <div class="slider-row">
                     <div class="slider-header">
                         <span>🌓 Tree Crowns Opacity</span>
                         <span id="treeOpacityVal" class="val-badge">65%</span>
                     </div>
-                    <input type="range" id="treeOpacitySlider" class="slider-input" min="0" max="1" step="0.05" value="0.65">
+                    <input type="range" id="treeOpacitySlider" class="slider-input" min="0" max="1" step="0.05"
+                        value="0.65">
                 </div>
 
                 <div class="slider-row" style="margin-top: 6px;">
@@ -625,9 +622,11 @@
             <div>
                 <div class="panel-section-title">
                     <span>📊 Tree Health Summary</span>
-                    <span style="font-size: 0.68rem; color: #38bdf8; cursor: pointer; display: flex; align-items: center; gap: 3px;" id="resetFilterBtn">🔄 Reset Filter</span>
+                    <span
+                        style="font-size: 0.68rem; color: #38bdf8; cursor: pointer; display: flex; align-items: center; gap: 3px;"
+                        id="resetFilterBtn">🔄 Reset Filter</span>
                 </div>
-                
+
                 <table class="summary-table">
                     <thead>
                         <tr>
@@ -658,7 +657,8 @@
                             <td style="text-align: right;" class="table-pct" id="tblPct-Sparse">0%</td>
                         </tr>
                         <tr class="table-row-filter" data-class="Defoliated">
-                            <td><span class="color-dot" style="background:#ef4444; color:#ef4444;"></span>Defoliated</td>
+                            <td><span class="color-dot" style="background:#ef4444; color:#ef4444;"></span>Defoliated
+                            </td>
                             <td style="text-align: right; font-weight: 600;" id="tblCount-Defoliated">0</td>
                             <td style="text-align: right;" class="table-pct" id="tblPct-Defoliated">0%</td>
                         </tr>
@@ -666,8 +666,10 @@
                     <tfoot>
                         <tr style="border-top: 1px solid rgba(255, 255, 255, 0.15); font-weight: 700;">
                             <td style="padding-top: 8px; color: #f8fafc; font-weight: 700;">Total Crowns</td>
-                            <td style="text-align: right; padding-top: 8px; font-weight: 700; color: #f8fafc;" id="tblCount-Total">0</td>
-                            <td style="text-align: right; padding-top: 8px; font-weight: 700; color: #38bdf8;" id="tblPct-Total">100%</td>
+                            <td style="text-align: right; padding-top: 8px; font-weight: 700; color: #f8fafc;"
+                                id="tblCount-Total">0</td>
+                            <td style="text-align: right; padding-top: 8px; font-weight: 700; color: #38bdf8;"
+                                id="tblPct-Total">100%</td>
                         </tr>
                     </tfoot>
                 </table>
@@ -823,18 +825,17 @@
         });
 
         // -------------------------------------------------------------
-        // TREE HEALTH GEOJSON OVERLAY LOGIC (Polygons & Points)
+        // TREE HEALTH GEOJSON OVERLAY LOGIC
         // -------------------------------------------------------------
         const healthColors = {
-            'Vigorous':  { fill: '#10b981', stroke: '#047857' },
-            'Normal':    { fill: '#22c55e', stroke: '#15803d' },
-            'Moderate':  { fill: '#eab308', stroke: '#a16207' },
-            'Sparse':    { fill: '#f97316', stroke: '#c2410c' },
+            'Vigorous': { fill: '#10b981', stroke: '#047857' },
+            'Normal': { fill: '#22c55e', stroke: '#15803d' },
+            'Moderate': { fill: '#eab308', stroke: '#a16207' },
+            'Sparse': { fill: '#f97316', stroke: '#c2410c' },
             'Defoliated': { fill: '#ef4444', stroke: '#b91c1c' }
         };
 
-        let polygonLayer = null;
-        let pointLayer = null;
+        let geojsonLayer = null;
         let geojsonData = null;
         let selectedHealthFilters = new Set(); // Multi-select Set for active health classes
         let treeFillOpacity = 0.65;
@@ -846,13 +847,15 @@
         treeOpacitySlider.addEventListener('input', (e) => {
             treeFillOpacity = parseFloat(e.target.value);
             treeOpacityVal.textContent = Math.round(treeFillOpacity * 100) + '%';
-            updateAllLayerStyles();
+            if (geojsonLayer) {
+                geojsonLayer.setStyle(feature => getFeatureStyle(feature));
+            }
         });
 
-        function getPolygonStyle(feature) {
+        function getFeatureStyle(feature) {
             const cls = feature.properties.Health_Cls || 'Normal';
             const colors = healthColors[cls] || healthColors['Normal'];
-            
+
             // If no filter selected or all 5 classes selected, show normal view
             if (selectedHealthFilters.size === 0 || selectedHealthFilters.size === 5) {
                 return {
@@ -883,51 +886,6 @@
             }
         }
 
-        function getPointStyle(feature) {
-            const cls = feature.properties.Health_Cls || 'Normal';
-            const colors = healthColors[cls] || healthColors['Normal'];
-
-            if (selectedHealthFilters.size === 0 || selectedHealthFilters.size === 5) {
-                return {
-                    radius: 5,
-                    fillColor: colors.fill,
-                    fillOpacity: Math.min(1.0, treeFillOpacity + 0.2),
-                    color: colors.stroke,
-                    weight: 1.5,
-                    renderer: canvasRenderer
-                };
-            }
-
-            if (selectedHealthFilters.has(cls)) {
-                return {
-                    radius: 6.5,
-                    fillColor: colors.fill,
-                    fillOpacity: 1.0,
-                    color: '#ffffff',
-                    weight: 2,
-                    renderer: canvasRenderer
-                };
-            } else {
-                return {
-                    radius: 3,
-                    fillColor: '#475569',
-                    fillOpacity: 0.2,
-                    color: '#334155',
-                    weight: 0.5,
-                    renderer: canvasRenderer
-                };
-            }
-        }
-
-        function updateAllLayerStyles() {
-            if (polygonLayer) {
-                polygonLayer.setStyle(feature => getPolygonStyle(feature));
-            }
-            if (pointLayer) {
-                pointLayer.setStyle(feature => getPointStyle(feature));
-            }
-        }
-
         function createTreePopupContent(props) {
             const crownId = props.crown_id || props.fid || (props.File_Name ? props.File_Name.replace('.png', '').replace(/^F\d+_TREE_/, '') : 'N/A');
             const cls = props.Health_Cls || 'Normal';
@@ -947,16 +905,10 @@
             const treeType = props.Tree_Type || props.TREE_TYPE_ || null;
             const heightVal = props.Height_Tre != null ? props.Height_Tre.toFixed(1) : (props.HEIGHT_M != null && props.HEIGHT_M > 0 ? props.HEIGHT_M.toFixed(1) : null);
 
-            const easting = props.EASTING != null ? props.EASTING.toFixed(2) : null;
-            const northing = props.NORTHING != null ? props.NORTHING.toFixed(2) : null;
-            const elevation = props.Z_Value != null ? props.Z_Value.toFixed(1) : null;
-            const lat = props.Point_Lat != null ? props.Point_Lat.toFixed(6) : null;
-            const lon = props.Point_Lon != null ? props.Point_Lon.toFixed(6) : null;
-
             return `
                 <div class="tree-popup">
                     <div class="tree-popup-header">
-                        <span class="tree-popup-title">Tree #${crownId}</span>
+                        <span class="tree-popup-title">Tree Crown #${crownId}</span>
                         <span class="health-status-tag" style="background: ${colors.fill}25; color: ${colors.fill}; border: 1px solid ${colors.fill}60;">
                             ${cls}
                         </span>
@@ -974,12 +926,6 @@
                         ${treeType ? `<div><span style="color:#94a3b8;">Type: </span><span style="font-weight:600; color:#38bdf8;">${treeType}</span></div>` : ''}
                         ${treeSpec ? `<div><span style="color:#94a3b8;">Species: </span><span style="font-weight:600; color:#f8fafc; font-style: italic;">${treeSpec}</span></div>` : ''}
                         ${heightVal ? `<div><span style="color:#94a3b8;">Height: </span><span style="font-weight:600; color:#e2e8f0;">${heightVal} m</span></div>` : ''}
-                    </div>` : ''}
-
-                    ${(lat && lon) ? `
-                    <div class="metric-row" style="margin-bottom: 8px; font-size: 0.70rem; display: flex; flex-direction: column; gap: 2px; background: rgba(56,189,248,0.06); border: 1px solid rgba(56,189,248,0.15); padding: 4px 6px; border-radius: 6px;">
-                        <div><span style="color:#94a3b8;">Lat/Lon: </span><span style="font-weight:600; color:#38bdf8;">${lat}, ${lon}</span></div>
-                        ${(easting && northing) ? `<div><span style="color:#94a3b8;">UTM X/Y: </span><span style="font-weight:600; color:#cbd5e1;">${easting}, ${northing}</span> ${elevation ? `<span style="color:#94a3b8;">(Z: ${elevation}m)</span>` : ''}</div>` : ''}
                     </div>` : ''}
 
                     <div class="metric-row">
@@ -1032,15 +978,10 @@
                 // Calculate Summary Statistics
                 const counts = { 'Vigorous': 0, 'Normal': 0, 'Moderate': 0, 'Sparse': 0, 'Defoliated': 0 };
                 let totalTrees = data.features.length;
-                const totalTreesStr = `(${totalTrees.toLocaleString()})`;
                 const loadingMsgEl = document.getElementById('loadingMsg');
-                if (loadingMsgEl) loadingMsgEl.textContent = `Loading Tree Health Dataset ${totalTreesStr}...`;
-                
-                const pointCountEl = document.getElementById('lblTreePointCount');
-                if (pointCountEl) pointCountEl.textContent = totalTreesStr;
+                if (loadingMsgEl) loadingMsgEl.textContent = `Loading Tree Health Dataset (${totalTrees.toLocaleString()} Crowns)...`;
                 const crownCountEl = document.getElementById('lblTreeCrownCount');
-                if (crownCountEl) crownCountEl.textContent = totalTreesStr;
-
+                if (crownCountEl) crownCountEl.textContent = `(${totalTrees.toLocaleString()})`;
                 let sumNDVI = 0, sumLCI = 0, sumNDRE = 0;
 
                 data.features.forEach(f => {
@@ -1074,10 +1015,10 @@
                 document.getElementById('avgLCI').textContent = (sumLCI / totalTrees).toFixed(3);
                 document.getElementById('avgNDRE').textContent = (sumNDRE / totalTrees).toFixed(3);
 
-                // 1. Create Polygon Layer (Tree Crowns)
-                polygonLayer = L.geoJSON(data, {
+                // Create Leaflet GeoJSON Layer
+                geojsonLayer = L.geoJSON(data, {
                     renderer: canvasRenderer,
-                    style: getPolygonStyle,
+                    style: getFeatureStyle,
                     onEachFeature: (feature, layer) => {
                         layer.bindPopup(() => createTreePopupContent(feature.properties));
 
@@ -1089,58 +1030,13 @@
                             });
                         });
                         layer.on('mouseout', function () {
-                            if (polygonLayer) polygonLayer.resetStyle(this);
+                            geojsonLayer.resetStyle(this);
                         });
                     }
                 });
 
-                // 2. Create Point Feature Collection & Point Layer (Tree Points)
-                const pointFeatureCollection = {
-                    type: "FeatureCollection",
-                    features: data.features.map(f => ({
-                        type: "Feature",
-                        properties: f.properties,
-                        geometry: {
-                            type: "Point",
-                            coordinates: [f.properties.Point_Lon, f.properties.Point_Lat]
-                        }
-                    }))
-                };
-
-                pointLayer = L.geoJSON(pointFeatureCollection, {
-                    renderer: canvasRenderer,
-                    pointToLayer: function(feature, latlng) {
-                        return L.circleMarker(latlng, getPointStyle(feature));
-                    },
-                    onEachFeature: (feature, layer) => {
-                        layer.bindPopup(() => createTreePopupContent(feature.properties));
-
-                        layer.on('mouseover', function () {
-                            this.setStyle({
-                                radius: 8,
-                                weight: 3,
-                                color: '#ffffff',
-                                fillOpacity: 1.0
-                            });
-                        });
-                        layer.on('mouseout', function () {
-                            if (pointLayer) pointLayer.resetStyle(this);
-                        });
-                    }
-                });
-
-                // Default layer visibility setup: Tree Points default ON, Crowns OFF
-                const pointsToggle = document.getElementById('pointsLayerToggle');
-                const crownsToggle = document.getElementById('crownsLayerToggle');
-
-                if (pointsToggle && pointsToggle.checked && pointLayer) {
-                    pointLayer.addTo(map);
-                }
-                if (crownsToggle && crownsToggle.checked && polygonLayer) {
-                    polygonLayer.addTo(map);
-                }
-
-                treeBounds = polygonLayer.getBounds();
+                geojsonLayer.addTo(map);
+                treeBounds = geojsonLayer.getBounds();
 
                 // Hide loading overlay
                 const loadingOverlay = document.getElementById('loadingOverlay');
@@ -1153,7 +1049,7 @@
                 loadingOverlay.innerHTML = '<span style="color: #ef4444;">⚠️ GeoJSON layer could not be loaded</span>';
             });
 
-        // Fit Tree Bounds Button
+        // Fit Tree Crowns Button
         document.getElementById('fitTreeBoundsBtn').addEventListener('click', () => {
             if (treeBounds && treeBounds.isValid()) {
                 map.fitBounds(treeBounds);
@@ -1162,29 +1058,17 @@
             }
         });
 
-        // Tree Points Layer Checkbox Toggle
-        const pointsLayerToggle = document.getElementById('pointsLayerToggle');
-        pointsLayerToggle.addEventListener('change', (e) => {
-            const container = document.getElementById('opt-points-toggle');
-            if (e.target.checked) {
+        // GeoJSON Checkbox Toggle
+        const geojsonLayerToggle = document.getElementById('geojsonLayerToggle');
+        geojsonLayerToggle.addEventListener('change', (e) => {
+            const isChecked = e.target.checked;
+            const container = document.getElementById('opt-geojson-toggle');
+            if (isChecked) {
                 container.classList.add('active');
-                if (pointLayer && !map.hasLayer(pointLayer)) map.addLayer(pointLayer);
+                if (geojsonLayer && !map.hasLayer(geojsonLayer)) map.addLayer(geojsonLayer);
             } else {
                 container.classList.remove('active');
-                if (pointLayer && map.hasLayer(pointLayer)) map.removeLayer(pointLayer);
-            }
-        });
-
-        // Tree Crowns Layer Checkbox Toggle
-        const crownsLayerToggle = document.getElementById('crownsLayerToggle');
-        crownsLayerToggle.addEventListener('change', (e) => {
-            const container = document.getElementById('opt-crowns-toggle');
-            if (e.target.checked) {
-                container.classList.add('active');
-                if (polygonLayer && !map.hasLayer(polygonLayer)) map.addLayer(polygonLayer);
-            } else {
-                container.classList.remove('active');
-                if (polygonLayer && map.hasLayer(polygonLayer)) map.removeLayer(polygonLayer);
+                if (geojsonLayer && map.hasLayer(geojsonLayer)) map.removeLayer(geojsonLayer);
             }
         });
 
@@ -1223,7 +1107,9 @@
                 }
             }
 
-            updateAllLayerStyles();
+            if (geojsonLayer) {
+                geojsonLayer.setStyle(feature => getFeatureStyle(feature));
+            }
         }
 
         // Health Summary Table Row Filter Click Listeners (Multi-Select Toggle)

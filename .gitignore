@@ -23,3 +23,6 @@ desktop.ini
 *.swo
 raster_map.html
 *.py
+final.geojson
+tree_points.qmd
+tree_points.geojson
