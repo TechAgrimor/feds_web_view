@@ -1,18 +1,19 @@
-<!DOCTYPE html>
-<html lang="en">
-
-<head>
+<html lang="en"><head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tree Health & Raster Analytics - Al Wajan</title>
+    <title>Tree Health &amp; Raster Analytics Dashboard</title>
     <!-- Google Fonts: Inter -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&amp;display=swap" rel="stylesheet">
     <!-- Leaflet CSS & JS -->
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <!-- Proj4 JS for Coordinate Transformations (UTM Zone 40N to WGS84) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/proj4js/2.9.0/proj4.js"></script>
+    <!-- Data JS files for blazingly fast offline load -->
     <script src="last.js"></script>
+    <script src="al_ojair.js"></script>
 
     <style>
         * {
@@ -44,29 +45,144 @@
             image-rendering: pixelated;
         }
 
-        /* Top Title Bar */
+        /* Top Header Bar */
         .top-bar {
             position: absolute;
             top: 16px;
             left: 55px;
             z-index: 1000;
-            background: rgba(15, 23, 42, 0.9);
+            background: rgba(15, 23, 42, 0.85);
             border: 1px solid rgba(255, 255, 255, 0.12);
-            backdrop-filter: blur(16px);
-            padding: 10px 18px;
-            border-radius: 12px;
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            padding: 8px 16px;
+            border-radius: 14px;
             display: flex;
             align-items: center;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
+            gap: 16px;
+            box-shadow: 0 14px 35px rgba(0, 0, 0, 0.65);
+        }
+
+        .top-brand {
+            display: flex;
+            align-items: center;
+            gap: 10px;
         }
 
         .top-title {
-            font-weight: 700;
+            font-weight: 800;
             font-size: 0.95rem;
-            color: #38bdf8;
+            letter-spacing: -0.01em;
+            background: linear-gradient(135deg, #38bdf8 0%, #818cf8 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            white-space: nowrap;
+        }
+
+        .live-tag {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 0.68rem;
+            font-weight: 700;
+            color: #10b981;
+            background: rgba(16, 185, 129, 0.12);
+            border: 1px solid rgba(16, 185, 129, 0.3);
+            padding: 2px 8px;
+            border-radius: 20px;
+            letter-spacing: 0.04em;
+        }
+
+        .pulse-dot {
+            width: 6px;
+            height: 6px;
+            background-color: #10b981;
+            border-radius: 50%;
+            box-shadow: 0 0 8px #10b981;
+            animation: pulse 1.8s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
+            70% { transform: scale(1); box-shadow: 0 0 0 6px rgba(16, 185, 129, 0); }
+            100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+        }
+
+        .divider-v {
+            width: 1px;
+            height: 22px;
+            background: rgba(255, 255, 255, 0.12);
+        }
+
+        /* Segmented Location Pills */
+        .location-pills {
             display: flex;
             align-items: center;
-            gap: 8px;
+            background: rgba(30, 41, 59, 0.55);
+            padding: 3px;
+            border-radius: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            gap: 3px;
+        }
+
+        .loc-pill {
+            background: transparent;
+            color: #94a3b8;
+            border: 1px solid transparent;
+            border-radius: 8px;
+            padding: 5px 13px;
+            font-size: 0.78rem;
+            font-weight: 600;
+            font-family: 'Inter', sans-serif;
+            cursor: pointer;
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            white-space: nowrap;
+        }
+
+        .loc-pill:hover {
+            color: #f8fafc;
+            background: rgba(255, 255, 255, 0.06);
+        }
+
+        .loc-pill.active {
+            background: linear-gradient(135deg, rgba(56, 189, 248, 0.22), rgba(16, 185, 129, 0.22));
+            color: #38bdf8;
+            border: 1px solid rgba(56, 189, 248, 0.45);
+            box-shadow: 0 2px 10px rgba(56, 189, 248, 0.2);
+            font-weight: 700;
+        }
+
+        /* Panel Toggle Floating Button */
+        .panel-toggle-fab {
+            position: absolute;
+            top: 16px;
+            right: 16px;
+            z-index: 1001;
+            background: rgba(15, 23, 42, 0.88);
+            border: 1px solid rgba(56, 189, 248, 0.4);
+            color: #38bdf8;
+            padding: 7px 14px;
+            border-radius: 12px;
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            cursor: pointer;
+            font-weight: 700;
+            font-size: 0.78rem;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.6);
+            transition: all 0.2s ease;
+        }
+
+        .panel-toggle-fab:hover {
+            background: rgba(30, 41, 59, 0.95);
+            border-color: #38bdf8;
+            box-shadow: 0 0 15px rgba(56, 189, 248, 0.4);
+            transform: translateY(-1px);
         }
 
         /* Bottom-Left Coordinates Bar */
@@ -75,9 +191,10 @@
             bottom: 16px;
             left: 16px;
             z-index: 1000;
-            background: rgba(15, 23, 42, 0.92);
+            background: rgba(15, 23, 42, 0.9);
             border: 1px solid rgba(255, 255, 255, 0.12);
             backdrop-filter: blur(14px);
+            -webkit-backdrop-filter: blur(14px);
             padding: 7px 16px;
             border-radius: 10px;
             font-family: 'Inter', monospace;
@@ -101,7 +218,7 @@
             margin: 0 4px;
         }
 
-        /* Buttons */
+        /* Action Buttons */
         .btn {
             background: rgba(56, 189, 248, 0.15);
             color: #38bdf8;
@@ -145,24 +262,32 @@
             height: 100vh;
         }
 
-        /* Right Side Compact Control Panel */
+        /* Right Side Control Panel */
         .layer-panel {
             position: absolute;
-            top: 16px;
+            top: 56px;
             right: 16px;
             z-index: 1000;
             width: 340px;
             background: rgba(15, 23, 42, 0.92);
             border: 1px solid rgba(255, 255, 255, 0.12);
             backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
             padding: 16px;
             border-radius: 16px;
             box-shadow: 0 14px 35px rgba(0, 0, 0, 0.7);
             display: flex;
             flex-direction: column;
             gap: 14px;
-            max-height: calc(100vh - 32px);
+            max-height: calc(100vh - 72px);
             overflow-y: auto;
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease;
+        }
+
+        .layer-panel.collapsed {
+            transform: translateX(370px);
+            opacity: 0;
+            pointer-events: none;
         }
 
         .layer-panel::-webkit-scrollbar {
@@ -301,7 +426,7 @@
             color: #38bdf8;
         }
 
-        /* Clean Compact Health Summary Table */
+        /* Health Summary Table */
         .summary-table {
             width: 100%;
             border-collapse: collapse;
@@ -482,15 +607,16 @@
             border-radius: 2px;
         }
 
-        /* Loading Indicator */
+        /* Loading Indicator Overlay */
         .loading-overlay {
             position: absolute;
-            top: 70px;
+            top: 72px;
             left: 55px;
             z-index: 1001;
             background: rgba(15, 23, 42, 0.92);
             border: 1px solid rgba(56, 189, 248, 0.4);
             backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
             padding: 8px 16px;
             border-radius: 20px;
             display: flex;
@@ -518,34 +644,49 @@
     </style>
 </head>
 
-<body>
-    <!-- Clean Top Title Bar -->
+<body class="">
+    <!-- Top Header Bar -->
     <div class="top-bar">
-        <span class="top-title">
-            🌲 Al Wajan Farm - Tree Health Analytics
-        </span>
+        <div class="top-brand">
+            <span class="top-title">Tree Health Analytics</span>
+        </div>
+
+        <div class="divider-v"></div>
+
+        <!-- Segmented Location Control Pills -->
+        <div class="location-pills">
+            <button class="loc-pill active" data-value="al_wajan">
+                <span>🌲</span> Al Wajan Farm
+            </button>
+            <button class="loc-pill" data-value="al_ojair">
+                <span>🌴</span> Al Ojair Farm
+            </button>
+        </div>
     </div>
+
+    <!-- Floating Panel Toggle Button -->
+    <button class="panel-toggle-fab" id="panelToggleFab">
+        <span id="panelToggleIcon">✕</span>
+        <span id="panelToggleText">Close Panel</span>
+    </button>
 
     <!-- Bottom-Left Coordinates Bar -->
     <div class="coords-bar" id="coordsBar">
         <span>Map CRS: <span class="coords-highlight">WGS84 (EPSG:4326)</span></span>
         <span class="coords-divider">|</span>
-        <span>Lat: <span id="lblLat" class="coords-highlight">23.65519</span></span>
+        <span>Lat: <span id="lblLat" class="coords-highlight">23.65784</span></span>
         <span class="coords-divider">|</span>
-        <span>Lon: <span id="lblLon" class="coords-highlight">55.55691</span></span>
+        <span>Lon: <span id="lblLon" class="coords-highlight">55.56292</span></span>
         <span class="coords-divider">|</span>
-        <span>Zoom: <span id="lblZoom" class="coords-highlight">18</span></span>
+        <span>Zoom: <span id="lblZoom" class="coords-highlight">21</span></span>
     </div>
 
     <!-- Loading Indicator -->
-    <div id="loadingOverlay" class="loading-overlay">
-        <div class="spinner"></div>
-        <span id="loadingMsg">Loading Tree Health Dataset...</span>
-    </div>
+    
 
     <div class="map-wrapper">
-        <!-- Right Side Control Panel -->
-        <div class="layer-panel">
+        <!-- Right Side Compact Control Panel -->
+        <div class="layer-panel" id="layerPanel">
 
             <!-- Base Map Selection -->
             <div>
@@ -556,7 +697,7 @@
                         <span class="radio-label">🛰️ Satellite (Mapbox)</span>
                     </label>
                     <label class="radio-option active" id="base-dark">
-                        <input type="radio" name="baseMapToggle" value="dark" checked>
+                        <input type="radio" name="baseMapToggle" value="dark" checked="">
                         <span class="radio-label">🌃 Mapbox Dark</span>
                     </label>
                     <label class="radio-option" id="base-streets">
@@ -573,26 +714,26 @@
                 <div class="panel-section-title">Active Layers</div>
                 <div class="option-group">
                     <label class="radio-option active" id="opt-tiled-toggle">
-                        <input type="checkbox" id="tiledLayerToggle" checked>
+                        <input type="checkbox" id="tiledLayerToggle" checked="">
                         <span class="radio-label">
                             <span class="color-dot" style="background:#38bdf8; color:#38bdf8;"></span>
-                            L3 Raster
+                            L3 Raster Layer
                         </span>
                     </label>
                     <label class="radio-option active" id="opt-points-toggle">
-                        <input type="checkbox" id="pointsLayerToggle" checked>
+                        <input type="checkbox" id="pointsLayerToggle" checked="">
                         <span class="radio-label">
                             <span class="color-dot" style="background:#22c55e; color:#22c55e;"></span>
-                            Tree Points <span id="lblTreePointCount"></span>
+                            Tree Points <span id="lblTreePointCount">(5,419)</span>
                         </span>
                     </label>
-                    <label class="radio-option" id="opt-crowns-toggle">
-                        <input type="checkbox" id="crownsLayerToggle">
+                    <!-- <label class="radio-option active" id="opt-crowns-toggle">
+                        <input type="checkbox" id="crownsLayerToggle" checked>
                         <span class="radio-label">
                             <span class="color-dot" style="background:#a855f7; color:#a855f7;"></span>
                             Tree Crowns <span id="lblTreeCrownCount"></span>
                         </span>
-                    </label>
+                    </label> -->
                 </div>
             </div>
 
@@ -604,7 +745,7 @@
                 
                 <div class="slider-row">
                     <div class="slider-header">
-                        <span>🌓 Tree Crowns Opacity</span>
+                        <span>🌓 Vector Opacity</span>
                         <span id="treeOpacityVal" class="val-badge">65%</span>
                     </div>
                     <input type="range" id="treeOpacitySlider" class="slider-input" min="0" max="1" step="0.05" value="0.65">
@@ -639,34 +780,34 @@
                     <tbody>
                         <tr class="table-row-filter" data-class="Vigorous">
                             <td><span class="color-dot" style="background:#10b981; color:#10b981;"></span>Vigorous</td>
-                            <td style="text-align: right; font-weight: 600;" id="tblCount-Vigorous">0</td>
-                            <td style="text-align: right;" class="table-pct" id="tblPct-Vigorous">0%</td>
+                            <td style="text-align: right; font-weight: 600;" id="tblCount-Vigorous">424</td>
+                            <td style="text-align: right;" class="table-pct" id="tblPct-Vigorous">7.8%</td>
                         </tr>
                         <tr class="table-row-filter" data-class="Normal">
                             <td><span class="color-dot" style="background:#22c55e; color:#22c55e;"></span>Normal</td>
-                            <td style="text-align: right; font-weight: 600;" id="tblCount-Normal">0</td>
-                            <td style="text-align: right;" class="table-pct" id="tblPct-Normal">0%</td>
+                            <td style="text-align: right; font-weight: 600;" id="tblCount-Normal">518</td>
+                            <td style="text-align: right;" class="table-pct" id="tblPct-Normal">9.6%</td>
                         </tr>
                         <tr class="table-row-filter" data-class="Moderate">
                             <td><span class="color-dot" style="background:#eab308; color:#eab308;"></span>Moderate</td>
-                            <td style="text-align: right; font-weight: 600;" id="tblCount-Moderate">0</td>
-                            <td style="text-align: right;" class="table-pct" id="tblPct-Moderate">0%</td>
+                            <td style="text-align: right; font-weight: 600;" id="tblCount-Moderate">444</td>
+                            <td style="text-align: right;" class="table-pct" id="tblPct-Moderate">8.2%</td>
                         </tr>
                         <tr class="table-row-filter" data-class="Sparse">
                             <td><span class="color-dot" style="background:#f97316; color:#f97316;"></span>Sparse</td>
-                            <td style="text-align: right; font-weight: 600;" id="tblCount-Sparse">0</td>
-                            <td style="text-align: right;" class="table-pct" id="tblPct-Sparse">0%</td>
+                            <td style="text-align: right; font-weight: 600;" id="tblCount-Sparse">2,425</td>
+                            <td style="text-align: right;" class="table-pct" id="tblPct-Sparse">44.7%</td>
                         </tr>
                         <tr class="table-row-filter" data-class="Defoliated">
                             <td><span class="color-dot" style="background:#ef4444; color:#ef4444;"></span>Defoliated</td>
-                            <td style="text-align: right; font-weight: 600;" id="tblCount-Defoliated">0</td>
-                            <td style="text-align: right;" class="table-pct" id="tblPct-Defoliated">0%</td>
+                            <td style="text-align: right; font-weight: 600;" id="tblCount-Defoliated">1,608</td>
+                            <td style="text-align: right;" class="table-pct" id="tblPct-Defoliated">29.7%</td>
                         </tr>
                     </tbody>
                     <tfoot>
                         <tr style="border-top: 1px solid rgba(255, 255, 255, 0.15); font-weight: 700;">
-                            <td style="padding-top: 8px; color: #f8fafc; font-weight: 700;">Total Crowns</td>
-                            <td style="text-align: right; padding-top: 8px; font-weight: 700; color: #f8fafc;" id="tblCount-Total">0</td>
+                            <td style="padding-top: 8px; color: #f8fafc; font-weight: 700;">Total Trees</td>
+                            <td style="text-align: right; padding-top: 8px; font-weight: 700; color: #f8fafc;" id="tblCount-Total">5,419</td>
                             <td style="text-align: right; padding-top: 8px; font-weight: 700; color: #38bdf8;" id="tblPct-Total">100%</td>
                         </tr>
                     </tfoot>
@@ -681,41 +822,74 @@
                 <div class="accordion-content" id="metricsAccordionContent">
                     <div class="metric-item">
                         <span style="color: #94a3b8;">Field Avg NDVI:</span>
-                        <span style="font-weight: 700; color: #22c55e;" id="avgNDVI">0.384</span>
+                        <span style="font-weight: 700; color: #22c55e;" id="avgNDVI">0.272</span>
                     </div>
                     <div class="metric-item">
                         <span style="color: #94a3b8;">Field Avg LCI:</span>
-                        <span style="font-weight: 700; color: #38bdf8;" id="avgLCI">0.058</span>
+                        <span style="font-weight: 700; color: #38bdf8;" id="avgLCI">0.074</span>
                     </div>
                     <div class="metric-item">
                         <span style="color: #94a3b8;">Field Avg NDRE:</span>
-                        <span style="font-weight: 700; color: #a855f7;" id="avgNDRE">0.051</span>
+                        <span style="font-weight: 700; color: #a855f7;" id="avgNDRE">0.063</span>
                     </div>
                 </div>
             </div>
 
             <!-- Bounds Action Buttons -->
             <div style="display: flex; gap: 8px;">
-                <button id="fitTreeBoundsBtn" class="btn">🌳 Fit Tree Crowns</button>
+                <button id="fitTreeBoundsBtn" class="btn">🌳 Fit Trees</button>
                 <button id="resetBoundsBtn" class="btn btn-secondary">🎯 Fit Raster</button>
             </div>
 
         </div>
 
         <!-- Leaflet Map Container -->
-        <div id="map"></div>
+        <div id="map" class="leaflet-container leaflet-touch leaflet-fade-anim leaflet-grab leaflet-touch-drag leaflet-touch-zoom" tabindex="0" style="position: relative;"><div class="leaflet-pane leaflet-map-pane" style="transform: translate3d(-3549px, 2515px, 0px);"><div class="leaflet-pane leaflet-tile-pane"><div class="leaflet-layer " style="z-index: 1; opacity: 1;"><div class="leaflet-tile-container leaflet-zoom-animated" style="z-index: 22; transform: translate3d(1042px, 33px, 0px) scale(1);"><img alt="" src="https://api.mapbox.com/styles/v1/mapbox/dark-v11/tiles/20/686121/453335?access_token=pk.eyJ1IjoiZ2FuZXNzYTA3MCIsImEiOiJjbWR3dHVlOW0xOXJ1Mmxva2Yzdmh6a3J1In0.BoJYhzzN1242F9yvQOtvXQ" class="leaflet-tile leaflet-tile-loaded" style="width: 512px; height: 512px; transform: translate3d(1038px, -1150px, 0px); opacity: 1;"><img alt="" src="https://api.mapbox.com/styles/v1/mapbox/dark-v11/tiles/20/686121/453334?access_token=pk.eyJ1IjoiZ2FuZXNzYTA3MCIsImEiOiJjbWR3dHVlOW0xOXJ1Mmxva2Yzdmh6a3J1In0.BoJYhzzN1242F9yvQOtvXQ" class="leaflet-tile leaflet-tile-loaded" style="width: 512px; height: 512px; transform: translate3d(1038px, -1662px, 0px); opacity: 1;"><img alt="" src="https://api.mapbox.com/styles/v1/mapbox/dark-v11/tiles/20/686122/453335?access_token=pk.eyJ1IjoiZ2FuZXNzYTA3MCIsImEiOiJjbWR3dHVlOW0xOXJ1Mmxva2Yzdmh6a3J1In0.BoJYhzzN1242F9yvQOtvXQ" class="leaflet-tile leaflet-tile-loaded" style="width: 512px; height: 512px; transform: translate3d(1550px, -1150px, 0px); opacity: 1;"><img alt="" src="https://api.mapbox.com/styles/v1/mapbox/dark-v11/tiles/20/686122/453334?access_token=pk.eyJ1IjoiZ2FuZXNzYTA3MCIsImEiOiJjbWR3dHVlOW0xOXJ1Mmxva2Yzdmh6a3J1In0.BoJYhzzN1242F9yvQOtvXQ" class="leaflet-tile leaflet-tile-loaded" style="width: 512px; height: 512px; transform: translate3d(1550px, -1662px, 0px); opacity: 1;"><img alt="" src="https://api.mapbox.com/styles/v1/mapbox/dark-v11/tiles/20/686121/453333?access_token=pk.eyJ1IjoiZ2FuZXNzYTA3MCIsImEiOiJjbWR3dHVlOW0xOXJ1Mmxva2Yzdmh6a3J1In0.BoJYhzzN1242F9yvQOtvXQ" class="leaflet-tile leaflet-tile-loaded" style="width: 512px; height: 512px; transform: translate3d(1038px, -2174px, 0px); opacity: 1;"><img alt="" src="https://api.mapbox.com/styles/v1/mapbox/dark-v11/tiles/20/686122/453333?access_token=pk.eyJ1IjoiZ2FuZXNzYTA3MCIsImEiOiJjbWR3dHVlOW0xOXJ1Mmxva2Yzdmh6a3J1In0.BoJYhzzN1242F9yvQOtvXQ" class="leaflet-tile leaflet-tile-loaded" style="width: 512px; height: 512px; transform: translate3d(1550px, -2174px, 0px); opacity: 1;"><img alt="" src="https://api.mapbox.com/styles/v1/mapbox/dark-v11/tiles/20/686123/453334?access_token=pk.eyJ1IjoiZ2FuZXNzYTA3MCIsImEiOiJjbWR3dHVlOW0xOXJ1Mmxva2Yzdmh6a3J1In0.BoJYhzzN1242F9yvQOtvXQ" class="leaflet-tile leaflet-tile-loaded" style="width: 512px; height: 512px; transform: translate3d(2062px, -1662px, 0px); opacity: 1;"><img alt="" src="https://api.mapbox.com/styles/v1/mapbox/dark-v11/tiles/20/686123/453333?access_token=pk.eyJ1IjoiZ2FuZXNzYTA3MCIsImEiOiJjbWR3dHVlOW0xOXJ1Mmxva2Yzdmh6a3J1In0.BoJYhzzN1242F9yvQOtvXQ" class="leaflet-tile leaflet-tile-loaded" style="width: 512px; height: 512px; transform: translate3d(2062px, -2174px, 0px); opacity: 1;"><img alt="" src="https://api.mapbox.com/styles/v1/mapbox/dark-v11/tiles/20/686123/453335?access_token=pk.eyJ1IjoiZ2FuZXNzYTA3MCIsImEiOiJjbWR3dHVlOW0xOXJ1Mmxva2Yzdmh6a3J1In0.BoJYhzzN1242F9yvQOtvXQ" class="leaflet-tile leaflet-tile-loaded" style="width: 512px; height: 512px; transform: translate3d(2062px, -1150px, 0px); opacity: 1;"><img alt="" src="https://api.mapbox.com/styles/v1/mapbox/dark-v11/tiles/20/686124/453334?access_token=pk.eyJ1IjoiZ2FuZXNzYTA3MCIsImEiOiJjbWR3dHVlOW0xOXJ1Mmxva2Yzdmh6a3J1In0.BoJYhzzN1242F9yvQOtvXQ" class="leaflet-tile leaflet-tile-loaded" style="width: 512px; height: 512px; transform: translate3d(2574px, -1662px, 0px); opacity: 1;"><img alt="" src="https://api.mapbox.com/styles/v1/mapbox/dark-v11/tiles/20/686124/453333?access_token=pk.eyJ1IjoiZ2FuZXNzYTA3MCIsImEiOiJjbWR3dHVlOW0xOXJ1Mmxva2Yzdmh6a3J1In0.BoJYhzzN1242F9yvQOtvXQ" class="leaflet-tile leaflet-tile-loaded" style="width: 512px; height: 512px; transform: translate3d(2574px, -2174px, 0px); opacity: 1;"><img alt="" src="https://api.mapbox.com/styles/v1/mapbox/dark-v11/tiles/20/686124/453335?access_token=pk.eyJ1IjoiZ2FuZXNzYTA3MCIsImEiOiJjbWR3dHVlOW0xOXJ1Mmxva2Yzdmh6a3J1In0.BoJYhzzN1242F9yvQOtvXQ" class="leaflet-tile leaflet-tile-loaded" style="width: 512px; height: 512px; transform: translate3d(2574px, -1150px, 0px); opacity: 1;"><img alt="" src="https://api.mapbox.com/styles/v1/mapbox/dark-v11/tiles/20/686123/453332?access_token=pk.eyJ1IjoiZ2FuZXNzYTA3MCIsImEiOiJjbWR3dHVlOW0xOXJ1Mmxva2Yzdmh6a3J1In0.BoJYhzzN1242F9yvQOtvXQ" class="leaflet-tile leaflet-tile-loaded" style="width: 512px; height: 512px; transform: translate3d(2062px, -2686px, 0px); opacity: 1;"><img alt="" src="https://api.mapbox.com/styles/v1/mapbox/dark-v11/tiles/20/686122/453332?access_token=pk.eyJ1IjoiZ2FuZXNzYTA3MCIsImEiOiJjbWR3dHVlOW0xOXJ1Mmxva2Yzdmh6a3J1In0.BoJYhzzN1242F9yvQOtvXQ" class="leaflet-tile leaflet-tile-loaded" style="width: 512px; height: 512px; transform: translate3d(1550px, -2686px, 0px); opacity: 1;"><img alt="" src="https://api.mapbox.com/styles/v1/mapbox/dark-v11/tiles/20/686124/453332?access_token=pk.eyJ1IjoiZ2FuZXNzYTA3MCIsImEiOiJjbWR3dHVlOW0xOXJ1Mmxva2Yzdmh6a3J1In0.BoJYhzzN1242F9yvQOtvXQ" class="leaflet-tile leaflet-tile-loaded" style="width: 512px; height: 512px; transform: translate3d(2574px, -2686px, 0px); opacity: 1;"><img alt="" src="https://api.mapbox.com/styles/v1/mapbox/dark-v11/tiles/20/686125/453333?access_token=pk.eyJ1IjoiZ2FuZXNzYTA3MCIsImEiOiJjbWR3dHVlOW0xOXJ1Mmxva2Yzdmh6a3J1In0.BoJYhzzN1242F9yvQOtvXQ" class="leaflet-tile leaflet-tile-loaded" style="width: 512px; height: 512px; transform: translate3d(3086px, -2174px, 0px); opacity: 1;"><img alt="" src="https://api.mapbox.com/styles/v1/mapbox/dark-v11/tiles/20/686121/453332?access_token=pk.eyJ1IjoiZ2FuZXNzYTA3MCIsImEiOiJjbWR3dHVlOW0xOXJ1Mmxva2Yzdmh6a3J1In0.BoJYhzzN1242F9yvQOtvXQ" class="leaflet-tile leaflet-tile-loaded" style="width: 512px; height: 512px; transform: translate3d(1038px, -2686px, 0px); opacity: 1;"><img alt="" src="https://api.mapbox.com/styles/v1/mapbox/dark-v11/tiles/20/686125/453332?access_token=pk.eyJ1IjoiZ2FuZXNzYTA3MCIsImEiOiJjbWR3dHVlOW0xOXJ1Mmxva2Yzdmh6a3J1In0.BoJYhzzN1242F9yvQOtvXQ" class="leaflet-tile leaflet-tile-loaded" style="width: 512px; height: 512px; transform: translate3d(3086px, -2686px, 0px); opacity: 1;"><img alt="" src="https://api.mapbox.com/styles/v1/mapbox/dark-v11/tiles/20/686125/453334?access_token=pk.eyJ1IjoiZ2FuZXNzYTA3MCIsImEiOiJjbWR3dHVlOW0xOXJ1Mmxva2Yzdmh6a3J1In0.BoJYhzzN1242F9yvQOtvXQ" class="leaflet-tile leaflet-tile-loaded" style="width: 512px; height: 512px; transform: translate3d(3086px, -1662px, 0px); opacity: 1;"><img alt="" src="https://api.mapbox.com/styles/v1/mapbox/dark-v11/tiles/20/686126/453332?access_token=pk.eyJ1IjoiZ2FuZXNzYTA3MCIsImEiOiJjbWR3dHVlOW0xOXJ1Mmxva2Yzdmh6a3J1In0.BoJYhzzN1242F9yvQOtvXQ" class="leaflet-tile leaflet-tile-loaded" style="width: 512px; height: 512px; transform: translate3d(3598px, -2686px, 0px); opacity: 1;"><img alt="" src="https://api.mapbox.com/styles/v1/mapbox/dark-v11/tiles/20/686126/453333?access_token=pk.eyJ1IjoiZ2FuZXNzYTA3MCIsImEiOiJjbWR3dHVlOW0xOXJ1Mmxva2Yzdmh6a3J1In0.BoJYhzzN1242F9yvQOtvXQ" class="leaflet-tile leaflet-tile-loaded" style="width: 512px; height: 512px; transform: translate3d(3598px, -2174px, 0px); opacity: 1;"></div><div class="leaflet-tile-container leaflet-zoom-animated" style="z-index: 21; transform: translate3d(3px, -66px, 0px) scale(0.5);"></div></div><div class="leaflet-layer " style="z-index: 10; opacity: 1;"><div class="leaflet-tile-container leaflet-zoom-animated" style="z-index: 24; transform: translate3d(1042px, 33px, 0px) scale(1);"><img alt="" src="tiles/21/1372244/1190482.png" class="leaflet-tile leaflet-tile-loaded" style="width: 256px; height: 256px; transform: translate3d(1550px, -1406px, 0px); opacity: 1;"><img alt="" src="tiles/21/1372244/1190483.png" class="leaflet-tile leaflet-tile-loaded" style="width: 256px; height: 256px; transform: translate3d(1550px, -1662px, 0px); opacity: 1;"><img alt="" src="tiles/21/1372245/1190482.png" class="leaflet-tile leaflet-tile-loaded" style="width: 256px; height: 256px; transform: translate3d(1806px, -1406px, 0px); opacity: 1;"><img alt="" src="tiles/21/1372245/1190483.png" class="leaflet-tile leaflet-tile-loaded" style="width: 256px; height: 256px; transform: translate3d(1806px, -1662px, 0px); opacity: 1;"><img alt="" src="tiles/21/1372244/1190484.png" class="leaflet-tile leaflet-tile-loaded" style="width: 256px; height: 256px; transform: translate3d(1550px, -1918px, 0px); opacity: 1;"><img alt="" src="tiles/21/1372245/1190484.png" class="leaflet-tile leaflet-tile-loaded" style="width: 256px; height: 256px; transform: translate3d(1806px, -1918px, 0px); opacity: 1;"><img alt="" src="tiles/21/1372246/1190482.png" class="leaflet-tile leaflet-tile-loaded" style="width: 256px; height: 256px; transform: translate3d(2062px, -1406px, 0px); opacity: 1;"><img alt="" src="tiles/21/1372246/1190483.png" class="leaflet-tile leaflet-tile-loaded" style="width: 256px; height: 256px; transform: translate3d(2062px, -1662px, 0px); opacity: 1;"><img alt="" src="tiles/21/1372246/1190484.png" class="leaflet-tile leaflet-tile-loaded" style="width: 256px; height: 256px; transform: translate3d(2062px, -1918px, 0px); opacity: 1;"><img alt="" src="tiles/21/1372244/1190485.png" class="leaflet-tile leaflet-tile-loaded" style="width: 256px; height: 256px; transform: translate3d(1550px, -2174px, 0px); opacity: 1;"><img alt="" src="tiles/21/1372245/1190485.png" class="leaflet-tile leaflet-tile-loaded" style="width: 256px; height: 256px; transform: translate3d(1806px, -2174px, 0px); opacity: 1;"><img alt="" src="tiles/21/1372246/1190485.png" class="leaflet-tile leaflet-tile-loaded" style="width: 256px; height: 256px; transform: translate3d(2062px, -2174px, 0px); opacity: 1;"><img alt="" src="tiles/21/1372247/1190483.png" class="leaflet-tile leaflet-tile-loaded" style="width: 256px; height: 256px; transform: translate3d(2318px, -1662px, 0px); opacity: 1;"><img alt="" src="tiles/21/1372247/1190484.png" class="leaflet-tile leaflet-tile-loaded" style="width: 256px; height: 256px; transform: translate3d(2318px, -1918px, 0px); opacity: 1;"><img alt="" src="tiles/21/1372247/1190482.png" class="leaflet-tile leaflet-tile-loaded" style="width: 256px; height: 256px; transform: translate3d(2318px, -1406px, 0px); opacity: 1;"><img alt="" src="tiles/21/1372247/1190485.png" class="leaflet-tile leaflet-tile-loaded" style="width: 256px; height: 256px; transform: translate3d(2318px, -2174px, 0px); opacity: 1;"><img alt="" src="tiles/21/1372248/1190483.png" class="leaflet-tile leaflet-tile-loaded" style="width: 256px; height: 256px; transform: translate3d(2574px, -1662px, 0px); opacity: 1;"><img alt="" src="tiles/21/1372248/1190484.png" class="leaflet-tile leaflet-tile-loaded" style="width: 256px; height: 256px; transform: translate3d(2574px, -1918px, 0px); opacity: 1;"><img alt="" src="tiles/21/1372248/1190482.png" class="leaflet-tile leaflet-tile-loaded" style="width: 256px; height: 256px; transform: translate3d(2574px, -1406px, 0px); opacity: 1;"><img alt="" src="tiles/21/1372248/1190485.png" class="leaflet-tile leaflet-tile-loaded" style="width: 256px; height: 256px; transform: translate3d(2574px, -2174px, 0px); opacity: 1;"><img alt="" src="tiles/21/1372246/1190486.png" class="leaflet-tile leaflet-tile-loaded" style="width: 256px; height: 256px; transform: translate3d(2062px, -2430px, 0px); opacity: 1;"><img alt="" src="tiles/21/1372245/1190486.png" class="leaflet-tile leaflet-tile-loaded" style="width: 256px; height: 256px; transform: translate3d(1806px, -2430px, 0px); opacity: 1;"><img alt="" src="tiles/21/1372247/1190486.png" class="leaflet-tile leaflet-tile-loaded" style="width: 256px; height: 256px; transform: translate3d(2318px, -2430px, 0px); opacity: 1;"><img alt="" src="tiles/21/1372244/1190486.png" class="leaflet-tile leaflet-tile-loaded" style="width: 256px; height: 256px; transform: translate3d(1550px, -2430px, 0px); opacity: 1;"><img alt="" src="tiles/21/1372248/1190486.png" class="leaflet-tile leaflet-tile-loaded" style="width: 256px; height: 256px; transform: translate3d(2574px, -2430px, 0px); opacity: 1;"><img alt="" src="tiles/21/1372249/1190484.png" class="leaflet-tile leaflet-tile-loaded" style="width: 256px; height: 256px; transform: translate3d(2830px, -1918px, 0px); opacity: 1;"><img alt="" src="tiles/21/1372249/1190485.png" class="leaflet-tile leaflet-tile-loaded" style="width: 256px; height: 256px; transform: translate3d(2830px, -2174px, 0px); opacity: 1;"><img alt="" src="tiles/21/1372249/1190483.png" class="leaflet-tile leaflet-tile-loaded" style="width: 256px; height: 256px; transform: translate3d(2830px, -1662px, 0px); opacity: 1;"><img alt="" src="tiles/21/1372249/1190486.png" class="leaflet-tile leaflet-tile-loaded" style="width: 256px; height: 256px; transform: translate3d(2830px, -2430px, 0px); opacity: 1;"><img alt="" src="tiles/21/1372249/1190482.png" class="leaflet-tile leaflet-tile-loaded" style="width: 256px; height: 256px; transform: translate3d(2830px, -1406px, 0px); opacity: 1;"><img alt="" src="tiles/21/1372250/1190484.png" class="leaflet-tile leaflet-tile-loaded" style="width: 256px; height: 256px; transform: translate3d(3086px, -1918px, 0px); opacity: 1;"><img alt="" src="tiles/21/1372250/1190485.png" class="leaflet-tile leaflet-tile-loaded" style="width: 256px; height: 256px; transform: translate3d(3086px, -2174px, 0px); opacity: 1;"><img alt="" src="tiles/21/1372250/1190483.png" class="leaflet-tile leaflet-tile-loaded" style="width: 256px; height: 256px; transform: translate3d(3086px, -1662px, 0px); opacity: 1;"><img alt="" src="tiles/21/1372250/1190486.png" class="leaflet-tile leaflet-tile-loaded" style="width: 256px; height: 256px; transform: translate3d(3086px, -2430px, 0px); opacity: 1;"><img alt="" src="tiles/21/1372250/1190482.png" class="leaflet-tile leaflet-tile-loaded" style="width: 256px; height: 256px; transform: translate3d(3086px, -1406px, 0px); opacity: 1;"><img alt="" src="tiles/21/1372247/1190487.png" class="leaflet-tile leaflet-tile-loaded" style="width: 256px; height: 256px; transform: translate3d(2318px, -2686px, 0px); opacity: 1;"><img alt="" src="tiles/21/1372248/1190487.png" class="leaflet-tile leaflet-tile-loaded" style="width: 256px; height: 256px; transform: translate3d(2574px, -2686px, 0px); opacity: 1;"><img alt="" src="tiles/21/1372246/1190487.png" class="leaflet-tile leaflet-tile-loaded" style="width: 256px; height: 256px; transform: translate3d(2062px, -2686px, 0px); opacity: 1;"><img alt="" src="tiles/21/1372249/1190487.png" class="leaflet-tile leaflet-tile-loaded" style="width: 256px; height: 256px; transform: translate3d(2830px, -2686px, 0px); opacity: 1;"><img alt="" src="tiles/21/1372245/1190487.png" class="leaflet-tile leaflet-tile-loaded" style="width: 256px; height: 256px; transform: translate3d(1806px, -2686px, 0px); opacity: 1;"><img alt="" src="tiles/21/1372250/1190487.png" class="leaflet-tile leaflet-tile-loaded" style="width: 256px; height: 256px; transform: translate3d(3086px, -2686px, 0px); opacity: 1;"><img alt="" src="tiles/21/1372251/1190486.png" class="leaflet-tile leaflet-tile-loaded" style="width: 256px; height: 256px; transform: translate3d(3342px, -2430px, 0px); opacity: 1;"><img alt="" src="tiles/21/1372251/1190485.png" class="leaflet-tile leaflet-tile-loaded" style="width: 256px; height: 256px; transform: translate3d(3342px, -2174px, 0px); opacity: 1;"><img alt="" src="tiles/21/1372244/1190487.png" class="leaflet-tile leaflet-tile-loaded" style="width: 256px; height: 256px; transform: translate3d(1550px, -2686px, 0px); opacity: 1;"><img alt="" src="tiles/21/1372251/1190487.png" class="leaflet-tile leaflet-tile-loaded" style="width: 256px; height: 256px; transform: translate3d(3342px, -2686px, 0px); opacity: 1;"><img alt="" src="tiles/21/1372251/1190484.png" class="leaflet-tile leaflet-tile-loaded" style="width: 256px; height: 256px; transform: translate3d(3342px, -1918px, 0px); opacity: 1;"><img alt="" src="tiles/21/1372252/1190486.png" class="leaflet-tile leaflet-tile-loaded" style="width: 256px; height: 256px; transform: translate3d(3598px, -2430px, 0px); opacity: 1;"><img alt="" src="tiles/21/1372252/1190485.png" class="leaflet-tile leaflet-tile-loaded" style="width: 256px; height: 256px; transform: translate3d(3598px, -2174px, 0px); opacity: 1;"><img alt="" src="tiles/21/1372252/1190487.png" class="leaflet-tile leaflet-tile-loaded" style="width: 256px; height: 256px; transform: translate3d(3598px, -2686px, 0px); opacity: 1;"><img alt="" src="tiles/21/1372252/1190484.png" class="leaflet-tile leaflet-tile-loaded" style="width: 256px; height: 256px; transform: translate3d(3598px, -1918px, 0px); opacity: 1;"><img alt="" src="tiles/21/1372253/1190486.png" class="leaflet-tile leaflet-tile-loaded" style="width: 256px; height: 256px; transform: translate3d(3854px, -2430px, 0px); opacity: 1;"><img alt="" src="tiles/21/1372253/1190485.png" class="leaflet-tile leaflet-tile-loaded" style="width: 256px; height: 256px; transform: translate3d(3854px, -2174px, 0px); opacity: 1;"><img alt="" src="tiles/21/1372253/1190487.png" class="leaflet-tile leaflet-tile-loaded" style="width: 256px; height: 256px; transform: translate3d(3854px, -2686px, 0px); opacity: 1;"><img alt="" src="tiles/21/1372253/1190484.png" class="leaflet-tile leaflet-tile-loaded" style="width: 256px; height: 256px; transform: translate3d(3854px, -1918px, 0px); opacity: 1;"></div><div class="leaflet-tile-container leaflet-zoom-animated" style="z-index: 23; transform: translate3d(3px, -66px, 0px) scale(0.5);"></div></div></div><div class="leaflet-pane leaflet-overlay-pane"><canvas class="leaflet-zoom-animated" width="2560" height="1600" style="transform: translate3d(2909px, -2915px, 0px); width: 2560px; height: 1600px;"></canvas></div><div class="leaflet-pane leaflet-shadow-pane"></div><div class="leaflet-pane leaflet-marker-pane"></div><div class="leaflet-pane leaflet-tooltip-pane"></div><div class="leaflet-pane leaflet-popup-pane"></div><div class="leaflet-proxy leaflet-zoom-animated" style="transform: translate3d(3.51296e+08px, 2.32107e+08px, 0px) scale(1.04858e+06);"></div></div><div class="leaflet-control-container"><div class="leaflet-top leaflet-left"><div class="leaflet-control-zoom leaflet-bar leaflet-control"><a class="leaflet-control-zoom-in" href="#" title="Zoom in" role="button" aria-label="Zoom in" aria-disabled="false"><span aria-hidden="true">+</span></a><a class="leaflet-control-zoom-out" href="#" title="Zoom out" role="button" aria-label="Zoom out" aria-disabled="false"><span aria-hidden="true">−</span></a></div></div><div class="leaflet-top leaflet-right"></div><div class="leaflet-bottom leaflet-left"></div><div class="leaflet-bottom leaflet-right"><div class="leaflet-control-attribution leaflet-control"><a href="https://leafletjs.com" title="A JavaScript library for interactive maps"><svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="12" height="8" viewBox="0 0 12 8" class="leaflet-attribution-flag"><path fill="#4C7BE1" d="M0 0h12v4H0z"></path><path fill="#FFD500" d="M0 4h12v3H0z"></path><path fill="#E0BC00" d="M0 7h12v1H0z"></path></svg> Leaflet</a> <span aria-hidden="true">|</span> © Mapbox © OpenStreetMap, High-Res Raster Tiles</div></div></div></div>
     </div>
 
     <script>
-        // Map Center & Bounding Box
-        const rasterBounds = [[23.651751, 55.550646], [23.658631, 55.563173]];
-        const mapCenter = [23.655191, 55.556909];
+        // Setup Proj4 Projection for UTM Zone 40N (EPSG:32640 -> EPSG:4326)
+        if (typeof proj4 !== 'undefined') {
+            proj4.defs("EPSG:32640", "+proj=utm +zone=40 +datum=WGS84 +units=m +no_defs");
+        }
 
-        // Canvas Renderer for high performance with 5,944 GeoJSON polygons
+        // Location Configurations
+        const LOCATIONS = {
+            'al_wajan': {
+                id: 'al_wajan',
+                name: 'Al Wajan Farm',
+                title: '🌲 Al Wajan Farm',
+                center: [23.655191, 55.556909],
+                rasterBounds: [[23.651564, 55.550551], [23.658998, 55.563335]],
+                tilesUrl: 'tiles/{z}/{x}/{y}.png',
+                geoJsonUrl: './last.geojson',
+                fallbackJsUrl: './last.js',
+                fallbackDataKey: 'healthAlWajanData',
+                hasCrownPolygons: true
+            },
+            'al_ojair': {
+                id: 'al_ojair',
+                name: 'Al Ojair Farm',
+                title: '🌴 Al Ojair Farm',
+                center: [23.782265, 55.526972],
+                rasterBounds: [[23.773820, 55.523737], [23.790710, 55.530207]],
+                tilesUrl: 'tiles_2/{z}/{x}/{y}.png',
+                geoJsonUrl: './al_ojair_tree_points.geojson',
+                fallbackJsUrl: './al_ojair.js',
+                fallbackDataKey: 'healthAlOjairData',
+                hasCrownPolygons: false
+            }
+        };
+
+        let currentLocationKey = 'al_wajan';
+        let currentLoc = LOCATIONS[currentLocationKey];
+        let rasterBounds = currentLoc.rasterBounds;
+
+        // Canvas Renderer for high performance
         const canvasRenderer = L.canvas({ padding: 0.5 });
 
         const map = L.map('map', {
-            center: mapCenter,
+            center: currentLoc.center,
             zoom: 18,
             minZoom: 15,
             maxZoom: 24,
@@ -758,17 +932,30 @@
             });
         });
 
-        // Tiled Raster Overlay
-        let tiledLayer = L.tileLayer('tiles/{z}/{x}/{y}.png', {
-            tms: true,
-            minZoom: 15,
-            maxZoom: 24,
-            maxNativeZoom: 22,
-            opacity: 1.0,
-            zIndex: 10,
-            attribution: 'High-Res Raster Tiles'
-        });
-        tiledLayer.addTo(map);
+        // Dynamic Tiled Raster Overlay
+        let tiledLayer = null;
+
+        function updateTiledLayer(tilesUrl) {
+            if (tiledLayer && map.hasLayer(tiledLayer)) {
+                map.removeLayer(tiledLayer);
+            }
+            const isChecked = document.getElementById('tiledLayerToggle').checked;
+            const currentOpacity = parseFloat(document.getElementById('opacitySlider').value);
+            
+            tiledLayer = L.tileLayer(tilesUrl, {
+                tms: true,
+                minZoom: 15,
+                maxZoom: 24,
+                maxNativeZoom: 22,
+                opacity: currentOpacity,
+                zIndex: 10,
+                attribution: 'High-Res Raster Tiles'
+            });
+
+            if (isChecked) {
+                tiledLayer.addTo(map);
+            }
+        }
 
         // Raster Checkbox Toggle Listener
         const tiledLayerToggle = document.getElementById('tiledLayerToggle');
@@ -794,9 +981,26 @@
             if (tiledLayer) tiledLayer.setOpacity(val);
         });
 
+        // Side Panel Toggle Logic
+        const layerPanel = document.getElementById('layerPanel');
+        const panelToggleFab = document.getElementById('panelToggleFab');
+        const panelToggleIcon = document.getElementById('panelToggleIcon');
+        const panelToggleText = document.getElementById('panelToggleText');
+
+        panelToggleFab.addEventListener('click', () => {
+            const isCollapsed = layerPanel.classList.toggle('collapsed');
+            if (isCollapsed) {
+                panelToggleIcon.textContent = '📊';
+                panelToggleText.textContent = 'Analytics Panel';
+            } else {
+                panelToggleIcon.textContent = '✕';
+                panelToggleText.textContent = 'Close Panel';
+            }
+        });
+
         // Fit Bounds Buttons
         document.getElementById('resetBoundsBtn').addEventListener('click', () => {
-            map.fitBounds(rasterBounds);
+            if (rasterBounds) map.fitBounds(rasterBounds);
         });
 
         // Dynamic Bottom-Left Coordinates Updater
@@ -823,7 +1027,7 @@
         });
 
         // -------------------------------------------------------------
-        // TREE HEALTH GEOJSON OVERLAY LOGIC (Polygons & Points)
+        // TREE HEALTH GEOJSON OVERLAY LOGIC
         // -------------------------------------------------------------
         const healthColors = {
             'Vigorous':  { fill: '#10b981', stroke: '#047857' },
@@ -836,7 +1040,7 @@
         let polygonLayer = null;
         let pointLayer = null;
         let geojsonData = null;
-        let selectedHealthFilters = new Set(); // Multi-select Set for active health classes
+        let selectedHealthFilters = new Set();
         let treeFillOpacity = 0.65;
         let treeBounds = null;
 
@@ -849,11 +1053,31 @@
             updateAllLayerStyles();
         });
 
+        // Helper to get Lat/Lon from feature regardless of format
+        function getLatLon(feature) {
+            const props = feature.properties || {};
+            if (props.Point_Lat != null && props.Point_Lon != null) {
+                return [props.Point_Lat, props.Point_Lon];
+            }
+            if (feature.geometry) {
+                if (feature.geometry.type === 'Point') {
+                    const [x, y] = feature.geometry.coordinates;
+                    if (Math.abs(x) <= 180 && Math.abs(y) <= 90) {
+                        return [y, x];
+                    }
+                    if (typeof proj4 !== 'undefined') {
+                        const [lon, lat] = proj4("EPSG:32640", "EPSG:4326", [x, y]);
+                        return [lat, lon];
+                    }
+                }
+            }
+            return [0, 0];
+        }
+
         function getPolygonStyle(feature) {
             const cls = feature.properties.Health_Cls || 'Normal';
             const colors = healthColors[cls] || healthColors['Normal'];
             
-            // If no filter selected or all 5 classes selected, show normal view
             if (selectedHealthFilters.size === 0 || selectedHealthFilters.size === 5) {
                 return {
                     fillColor: colors.fill,
@@ -883,7 +1107,7 @@
             }
         }
 
-        const STANDARD_POINT_RADIUS = 4.5; // Standard uniform size for all tree points
+        const STANDARD_POINT_RADIUS = 4.5;
 
         function getPointStyle(feature) {
             const cls = feature.properties.Health_Cls || 'Normal';
@@ -930,30 +1154,45 @@
             }
         }
 
-        function createTreePopupContent(props) {
-            const crownId = props.crown_id || props.fid || (props.File_Name ? props.File_Name.replace('.png', '').replace(/^F\d+_TREE_/, '') : 'N/A');
+        function createTreePopupContent(props, feature) {
+            const crownId = props.crown_id || props.fid || props.Tree_ID || (props.File_Name || props.File_NAME ? (props.File_Name || props.File_NAME).replace('.png', '').replace(/^F\d+_TREE_/, '').replace(/^F03_Tree_/, '') : 'N/A');
             const cls = props.Health_Cls || 'Normal';
-            const condition = props.Condition || 'Healthy';
+            const condition = props.Condition || props.Condition_ || props.Conditio_1 || 'Healthy';
             const colors = healthColors[cls] || healthColors['Normal'];
 
             const ndviVal = props.NDVI_mean != null ? props.NDVI_mean : (props.NDVI_mea_1 != null ? props.NDVI_mea_1 : null);
-            const ndvi = ndviVal != null ? ndviVal.toFixed(3) : 'N/A';
-            const lci = props.LCI_mean != null ? props.LCI_mean.toFixed(3) : 'N/A';
-            const ndre = props.NDRE_mean != null ? props.NDRE_mean.toFixed(3) : 'N/A';
+            const ndvi = ndviVal != null ? parseFloat(ndviVal).toFixed(3) : 'N/A';
+            const lci = props.LCI_mean != null ? parseFloat(props.LCI_mean).toFixed(3) : 'N/A';
+            const ndre = props.NDRE_mean != null ? parseFloat(props.NDRE_mean).toFixed(3) : 'N/A';
 
             const ndviPct = Math.min(100, Math.max(0, (ndviVal || 0) * 100));
             const lciPct = Math.min(100, Math.max(0, (props.LCI_mean || 0) * 200));
             const ndrePct = Math.min(100, Math.max(0, (props.NDRE_mean || 0) * 200));
 
-            const treeSpec = props.Tree_Spec || props.TREE_SPECI || null;
-            const treeType = props.Tree_Type || props.TREE_TYPE_ || null;
-            const heightVal = props.Height_Tre != null ? props.Height_Tre.toFixed(1) : (props.HEIGHT_M != null && props.HEIGHT_M > 0 ? props.HEIGHT_M.toFixed(1) : null);
+            const treeSpec = props.Tree_Sient || props.TREE_SPECI || props.Tree_Spec || null;
+            const treeType = props.TREE_TYP_1 || props.Tree_Type || props.TREE_TYPE || null;
+            
+            let rawHeight = props.HEIGHT_M != null ? props.HEIGHT_M : (props.Height_Tre != null ? props.Height_Tre : (props.HEIGHT_M_1 != null ? props.HEIGHT_M_1 : props.HEIGHT_M_2));
+            let heightVal = null;
+            if (rawHeight != null) {
+                const parsedH = parseFloat(rawHeight);
+                if (!isNaN(parsedH) && parsedH > 0) heightVal = parsedH.toFixed(1);
+            }
 
-            const easting = props.EASTING != null ? props.EASTING.toFixed(2) : null;
-            const northing = props.NORTHING != null ? props.NORTHING.toFixed(2) : null;
-            const elevation = props.Z_Value != null ? props.Z_Value.toFixed(1) : null;
-            const lat = props.Point_Lat != null ? props.Point_Lat.toFixed(6) : null;
-            const lon = props.Point_Lon != null ? props.Point_Lon.toFixed(6) : null;
+            const eastingVal = props.EASTING != null ? props.EASTING : props.Easting_Co;
+            const northingVal = props.NORTHING != null ? props.NORTHING : props.Northing_C;
+            const easting = eastingVal != null ? parseFloat(eastingVal).toFixed(2) : null;
+            const northing = northingVal != null ? parseFloat(northingVal).toFixed(2) : null;
+            const elevation = props.Z_Value != null ? parseFloat(props.Z_Value).toFixed(1) : null;
+
+            let lat = null, lon = null;
+            if (feature) {
+                const [l_lat, l_lon] = getLatLon(feature);
+                if (l_lat !== 0 && l_lon !== 0) {
+                    lat = l_lat.toFixed(6);
+                    lon = l_lon.toFixed(6);
+                }
+            }
 
             return `
                 <div class="tree-popup">
@@ -1017,168 +1256,231 @@
             `;
         }
 
-        function loadGeoJSONData() {
-            if (window.healthAlWajanData && window.healthAlWajanData.features) {
-                return Promise.resolve(window.healthAlWajanData);
+        function loadGeoJSONDataForLoc(loc) {
+            if (loc.fallbackDataKey && window[loc.fallbackDataKey] && window[loc.fallbackDataKey].features) {
+                return Promise.resolve(window[loc.fallbackDataKey]);
             }
-            // Fallback 1: Try fetching last.geojson
-            return fetch('./last.geojson')
+            return fetch(loc.geoJsonUrl)
                 .then(res => {
                     if (!res.ok) throw new Error(`HTTP ${res.status}: ${res.statusText}`);
                     return res.json();
                 })
                 .catch(err => {
-                    console.warn('last.geojson fetch failed, trying last.js fallback parsing:', err);
-                    // Fallback 2: Try fetching last.js text and extracting JSON object
-                    return fetch('./last.js')
-                        .then(res => {
-                            if (!res.ok) throw new Error(`HTTP ${res.status}: ${res.statusText}`);
-                            return res.text();
-                        })
-                        .then(text => {
-                            const jsonStart = text.indexOf('{');
-                            const jsonEnd = text.lastIndexOf('}');
-                            if (jsonStart !== -1 && jsonEnd !== -1) {
-                                return JSON.parse(text.slice(jsonStart, jsonEnd + 1));
-                            }
-                            throw new Error('Could not parse JSON structure from last.js');
-                        });
+                    if (loc.fallbackJsUrl) {
+                        return fetch(loc.fallbackJsUrl)
+                            .then(res => res.text())
+                            .then(text => {
+                                const jsonStart = text.indexOf('{');
+                                const jsonEnd = text.lastIndexOf('}');
+                                if (jsonStart !== -1 && jsonEnd !== -1) {
+                                    return JSON.parse(text.slice(jsonStart, jsonEnd + 1));
+                                }
+                                throw new Error('Could not parse fallback JS object');
+                            });
+                    }
+                    throw err;
                 });
         }
 
-        loadGeoJSONData()
-            .then(data => {
-                geojsonData = data;
-
-                // Calculate Summary Statistics
-                const counts = { 'Vigorous': 0, 'Normal': 0, 'Moderate': 0, 'Sparse': 0, 'Defoliated': 0 };
-                let totalTrees = data.features.length;
-                const totalTreesStr = `(${totalTrees.toLocaleString()})`;
-                const loadingMsgEl = document.getElementById('loadingMsg');
-                if (loadingMsgEl) loadingMsgEl.textContent = `Loading Tree Health Dataset ${totalTreesStr}...`;
-                
-                const pointCountEl = document.getElementById('lblTreePointCount');
-                if (pointCountEl) pointCountEl.textContent = totalTreesStr;
-                const crownCountEl = document.getElementById('lblTreeCrownCount');
-                if (crownCountEl) crownCountEl.textContent = totalTreesStr;
-
-                let sumNDVI = 0, sumLCI = 0, sumNDRE = 0;
-
-                data.features.forEach(f => {
-                    const cls = f.properties.Health_Cls;
-                    if (counts[cls] !== undefined) counts[cls]++;
-                    const ndviVal = f.properties.NDVI_mean != null ? f.properties.NDVI_mean : (f.properties.NDVI_mea_1 || 0);
-                    sumNDVI += ndviVal;
-                    sumLCI += (f.properties.LCI_mean || 0);
-                    sumNDRE += (f.properties.NDRE_mean || 0);
-                });
-
-                // Update Table Counters & Ratios
-                Object.keys(counts).forEach(key => {
-                    const countEl = document.getElementById(`tblCount-${key}`);
-                    const pctEl = document.getElementById(`tblPct-${key}`);
-                    if (countEl) countEl.textContent = counts[key].toLocaleString();
-                    if (pctEl) {
-                        const pct = ((counts[key] / totalTrees) * 100).toFixed(1);
-                        pctEl.textContent = pct + '%';
-                    }
-                });
-
-                // Update Total Row
-                const totalCountEl = document.getElementById('tblCount-Total');
-                const totalPctEl = document.getElementById('tblPct-Total');
-                if (totalCountEl) totalCountEl.textContent = totalTrees.toLocaleString();
-                if (totalPctEl) totalPctEl.textContent = '100%';
-
-                // Update Field Averages
-                document.getElementById('avgNDVI').textContent = (sumNDVI / totalTrees).toFixed(3);
-                document.getElementById('avgLCI').textContent = (sumLCI / totalTrees).toFixed(3);
-                document.getElementById('avgNDRE').textContent = (sumNDRE / totalTrees).toFixed(3);
-
-                // 1. Create Polygon Layer (Tree Crowns)
-                polygonLayer = L.geoJSON(data, {
-                    renderer: canvasRenderer,
-                    style: getPolygonStyle,
-                    onEachFeature: (feature, layer) => {
-                        layer.bindPopup(() => createTreePopupContent(feature.properties));
-
-                        layer.on('mouseover', function () {
-                            this.setStyle({
-                                weight: 3,
-                                color: '#ffffff',
-                                fillOpacity: 0.9
-                            });
-                        });
-                        layer.on('mouseout', function () {
-                            if (polygonLayer) polygonLayer.resetStyle(this);
-                        });
-                    }
-                });
-
-                // 2. Create Point Feature Collection & Point Layer (Tree Points)
-                const pointFeatureCollection = {
-                    type: "FeatureCollection",
-                    features: data.features.map(f => ({
-                        type: "Feature",
-                        properties: f.properties,
-                        geometry: {
-                            type: "Point",
-                            coordinates: [f.properties.Point_Lon, f.properties.Point_Lat]
-                        }
-                    }))
-                };
-
-                pointLayer = L.geoJSON(pointFeatureCollection, {
-                    renderer: canvasRenderer,
-                    pointToLayer: function(feature, latlng) {
-                        return L.circleMarker(latlng, getPointStyle(feature));
-                    },
-                    onEachFeature: (feature, layer) => {
-                        layer.bindPopup(() => createTreePopupContent(feature.properties));
-
-                        layer.on('mouseover', function () {
-                            this.setStyle({
-                                radius: STANDARD_POINT_RADIUS + 1,
-                                weight: 2,
-                                color: '#ffffff',
-                                fillOpacity: 1.0
-                            });
-                        });
-                        layer.on('mouseout', function () {
-                            if (pointLayer) pointLayer.resetStyle(this);
-                        });
-                    }
-                });
-
-                // Default layer visibility setup: Tree Points default ON, Crowns OFF
-                const pointsToggle = document.getElementById('pointsLayerToggle');
-                const crownsToggle = document.getElementById('crownsLayerToggle');
-
-                if (pointsToggle && pointsToggle.checked && pointLayer) {
-                    pointLayer.addTo(map);
+        function updateFilterStateUIOnly() {
+            const isFilterActive = (selectedHealthFilters.size > 0 && selectedHealthFilters.size < 5);
+            document.querySelectorAll('.table-row-filter').forEach(el => {
+                const cls = el.getAttribute('data-class');
+                if (!isFilterActive) {
+                    el.classList.remove('selected', 'dimmed');
+                } else if (selectedHealthFilters.has(cls)) {
+                    el.classList.add('selected');
+                    el.classList.remove('dimmed');
+                } else {
+                    el.classList.remove('selected');
+                    el.classList.add('dimmed');
                 }
-                if (crownsToggle && crownsToggle.checked && polygonLayer) {
-                    polygonLayer.addTo(map);
-                }
-
-                treeBounds = polygonLayer.getBounds();
-
-                // Hide loading overlay
-                const loadingOverlay = document.getElementById('loadingOverlay');
-                loadingOverlay.style.opacity = '0';
-                setTimeout(() => loadingOverlay.remove(), 300);
-            })
-            .catch(err => {
-                console.error('Error loading GeoJSON:', err);
-                const loadingOverlay = document.getElementById('loadingOverlay');
-                loadingOverlay.innerHTML = '<span style="color: #ef4444;">⚠️ GeoJSON layer could not be loaded</span>';
             });
+        }
+
+        function loadLocation(locKey) {
+            const loc = LOCATIONS[locKey];
+            if (!loc) return;
+
+            currentLocationKey = locKey;
+            currentLoc = loc;
+            rasterBounds = loc.rasterBounds;
+
+            // Show Loading Indicator
+            let loadingOverlay = document.getElementById('loadingOverlay');
+            if (!loadingOverlay) {
+                loadingOverlay = document.createElement('div');
+                loadingOverlay.id = 'loadingOverlay';
+                loadingOverlay.className = 'loading-overlay';
+                document.body.appendChild(loadingOverlay);
+            }
+            loadingOverlay.style.opacity = '1';
+            loadingOverlay.innerHTML = `
+                <div class="spinner"></div>
+                <span id="loadingMsg">Loading ${loc.name} Dataset...</span>
+            `;
+
+            // Reset health filters
+            selectedHealthFilters.clear();
+            updateFilterStateUIOnly();
+
+            // Clear existing vector layers
+            if (polygonLayer && map.hasLayer(polygonLayer)) map.removeLayer(polygonLayer);
+            if (pointLayer && map.hasLayer(pointLayer)) map.removeLayer(pointLayer);
+            polygonLayer = null;
+            pointLayer = null;
+
+            // Update Raster Tiled Layer
+            updateTiledLayer(loc.tilesUrl);
+
+            // Fetch and process GeoJSON dataset
+            loadGeoJSONDataForLoc(loc)
+                .then(data => {
+                    geojsonData = data;
+
+                    // Calculate Summary Statistics
+                    const counts = { 'Vigorous': 0, 'Normal': 0, 'Moderate': 0, 'Sparse': 0, 'Defoliated': 0 };
+                    let totalTrees = data.features.length;
+                    const totalTreesStr = `(${totalTrees.toLocaleString()})`;
+
+                    const loadingMsgEl = document.getElementById('loadingMsg');
+                    if (loadingMsgEl) loadingMsgEl.textContent = `Loading ${loc.name} Dataset ${totalTreesStr}...`;
+                    
+                    const pointCountEl = document.getElementById('lblTreePointCount');
+                    if (pointCountEl) pointCountEl.textContent = totalTreesStr;
+                    const crownCountEl = document.getElementById('lblTreeCrownCount');
+                    if (crownCountEl) crownCountEl.textContent = totalTreesStr;
+
+                    let sumNDVI = 0, sumLCI = 0, sumNDRE = 0;
+
+                    data.features.forEach(f => {
+                        const cls = f.properties.Health_Cls || 'Normal';
+                        if (counts[cls] !== undefined) counts[cls]++;
+                        const ndviVal = f.properties.NDVI_mean != null ? f.properties.NDVI_mean : (f.properties.NDVI_mea_1 || 0);
+                        sumNDVI += parseFloat(ndviVal) || 0;
+                        sumLCI += parseFloat(f.properties.LCI_mean) || 0;
+                        sumNDRE += parseFloat(f.properties.NDRE_mean) || 0;
+                    });
+
+                    // Update Table Counters & Ratios
+                    Object.keys(counts).forEach(key => {
+                        const countEl = document.getElementById(`tblCount-${key}`);
+                        const pctEl = document.getElementById(`tblPct-${key}`);
+                        if (countEl) countEl.textContent = counts[key].toLocaleString();
+                        if (pctEl) {
+                            const pct = totalTrees > 0 ? ((counts[key] / totalTrees) * 100).toFixed(1) : '0';
+                            pctEl.textContent = pct + '%';
+                        }
+                    });
+
+                    // Update Total Row
+                    const totalCountEl = document.getElementById('tblCount-Total');
+                    const totalPctEl = document.getElementById('tblPct-Total');
+                    if (totalCountEl) totalCountEl.textContent = totalTrees.toLocaleString();
+                    if (totalPctEl) totalPctEl.textContent = '100%';
+
+                    // Update Field Averages
+                    document.getElementById('avgNDVI').textContent = totalTrees > 0 ? (sumNDVI / totalTrees).toFixed(3) : '0.000';
+                    document.getElementById('avgLCI').textContent = totalTrees > 0 ? (sumLCI / totalTrees).toFixed(3) : '0.000';
+                    document.getElementById('avgNDRE').textContent = totalTrees > 0 ? (sumNDRE / totalTrees).toFixed(3) : '0.000';
+
+                    // 1. Create Polygon Layer (Tree Crowns) if polygons exist
+                    const isPolygonData = data.features.length > 0 && (data.features[0].geometry.type === 'Polygon' || data.features[0].geometry.type === 'MultiPolygon');
+                    
+                    if (isPolygonData) {
+                        polygonLayer = L.geoJSON(data, {
+                            renderer: canvasRenderer,
+                            style: getPolygonStyle,
+                            onEachFeature: (feature, layer) => {
+                                layer.bindPopup(() => createTreePopupContent(feature.properties, feature));
+                                layer.on('mouseover', function () {
+                                    this.setStyle({ weight: 3, color: '#ffffff', fillOpacity: 0.9 });
+                                });
+                                layer.on('mouseout', function () {
+                                    if (polygonLayer) polygonLayer.resetStyle(this);
+                                });
+                            }
+                        });
+                    }
+
+                    // 2. Create Point Layer (Tree Points)
+                    const pointFeatures = data.features.map(f => {
+                        const [lat, lon] = getLatLon(f);
+                        return {
+                            type: "Feature",
+                            properties: f.properties,
+                            geometry: { type: "Point", coordinates: [lon, lat] }
+                        };
+                    });
+
+                    const pointFeatureCollection = { type: "FeatureCollection", features: pointFeatures };
+
+                    pointLayer = L.geoJSON(pointFeatureCollection, {
+                        renderer: canvasRenderer,
+                        pointToLayer: function(feature, latlng) {
+                            return L.circleMarker(latlng, getPointStyle(feature));
+                        },
+                        onEachFeature: (feature, layer) => {
+                            layer.bindPopup(() => createTreePopupContent(feature.properties, feature));
+                            layer.on('mouseover', function () {
+                                this.setStyle({ radius: STANDARD_POINT_RADIUS + 1.5, weight: 2, color: '#ffffff', fillOpacity: 1.0 });
+                            });
+                            layer.on('mouseout', function () {
+                                if (pointLayer) pointLayer.resetStyle(this);
+                            });
+                        }
+                    });
+
+                    // Layer Visibility Management
+                    const pointsToggle = document.getElementById('pointsLayerToggle');
+                    const crownsToggle = document.getElementById('crownsLayerToggle');
+
+                    if (pointsToggle && pointsToggle.checked && pointLayer) {
+                        pointLayer.addTo(map);
+                    }
+                    if (crownsToggle && crownsToggle.checked) {
+                        if (polygonLayer) {
+                            polygonLayer.addTo(map);
+                        } else if (pointLayer && !map.hasLayer(pointLayer)) {
+                            pointLayer.addTo(map);
+                        }
+                    }
+
+                    treeBounds = (polygonLayer && polygonLayer.getBounds().isValid()) ? polygonLayer.getBounds() : pointLayer.getBounds();
+
+                    // Fly / Fit to location
+                    if (treeBounds && treeBounds.isValid()) {
+                        map.fitBounds(treeBounds);
+                    } else if (rasterBounds) {
+                        map.fitBounds(rasterBounds);
+                    }
+
+                    // Hide loading overlay
+                    loadingOverlay.style.opacity = '0';
+                    setTimeout(() => { if (loadingOverlay.parentNode) loadingOverlay.remove(); }, 300);
+                })
+                .catch(err => {
+                    console.error(`Error loading dataset for ${loc.name}:`, err);
+                    loadingOverlay.innerHTML = `<span style="color: #ef4444;">⚠️ Could not load dataset for ${loc.name}</span>`;
+                });
+        }
+
+        // Location Pills Click Listeners
+        document.querySelectorAll('.loc-pill').forEach(pill => {
+            pill.addEventListener('click', (e) => {
+                const value = e.currentTarget.getAttribute('data-value');
+                document.querySelectorAll('.loc-pill').forEach(p => p.classList.remove('active'));
+                e.currentTarget.classList.add('active');
+                
+                loadLocation(value);
+            });
+        });
 
         // Fit Tree Bounds Button
         document.getElementById('fitTreeBoundsBtn').addEventListener('click', () => {
             if (treeBounds && treeBounds.isValid()) {
                 map.fitBounds(treeBounds);
-            } else {
+            } else if (rasterBounds) {
                 map.fitBounds(rasterBounds);
             }
         });
@@ -1198,16 +1500,18 @@
 
         // Tree Crowns Layer Checkbox Toggle
         const crownsLayerToggle = document.getElementById('crownsLayerToggle');
-        crownsLayerToggle.addEventListener('change', (e) => {
-            const container = document.getElementById('opt-crowns-toggle');
-            if (e.target.checked) {
-                container.classList.add('active');
-                if (polygonLayer && !map.hasLayer(polygonLayer)) map.addLayer(polygonLayer);
-            } else {
-                container.classList.remove('active');
-                if (polygonLayer && map.hasLayer(polygonLayer)) map.removeLayer(polygonLayer);
-            }
-        });
+        if (crownsLayerToggle) {
+            crownsLayerToggle.addEventListener('change', (e) => {
+                const container = document.getElementById('opt-crowns-toggle');
+                if (e.target.checked) {
+                    if (container) container.classList.add('active');
+                    if (polygonLayer && !map.hasLayer(polygonLayer)) map.addLayer(polygonLayer);
+                } else {
+                    if (container) container.classList.remove('active');
+                    if (polygonLayer && map.hasLayer(polygonLayer)) map.removeLayer(polygonLayer);
+                }
+            });
+        }
 
         function updateFilterState() {
             const isFilterActive = (selectedHealthFilters.size > 0 && selectedHealthFilters.size < 5);
@@ -1235,7 +1539,8 @@
                 } else {
                     let filteredCount = 0;
                     geojsonData.features.forEach(f => {
-                        if (selectedHealthFilters.has(f.properties.Health_Cls)) {
+                        const cls = f.properties.Health_Cls || 'Normal';
+                        if (selectedHealthFilters.has(cls)) {
                             filteredCount++;
                         }
                     });
@@ -1265,7 +1570,10 @@
             selectedHealthFilters.clear();
             updateFilterState();
         });
-    </script>
-</body>
 
-</html>
+        // Initial Load
+        loadLocation('al_wajan');
+    </script>
+
+
+</body></html>
