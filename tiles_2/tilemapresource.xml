@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
     <TileMap version="1.0.0" tilemapservice="http://tms.osgeo.org/1.0.0">
-      <Title>result.tif</Title>
+      <Title>AlOjair_L3_65_Ortho_RGB.tif</Title>
       <Abstract></Abstract>
       <SRS>EPSG:3857</SRS>
-      <BoundingBox minx="55.52373724373946" miny="23.77382010375936" maxx="55.53020675442291" maxy="23.79070988689065"/>
-      <Origin x="55.52373724373946" y="23.77382010375936"/>
+      <BoundingBox minx="55.52345737042921" miny="23.77380841675600" maxx="55.53111355295361" maxy="23.79051257845843"/>
+      <Origin x="55.52345737042921" y="23.77380841675600"/>
       <TileFormat width="256" height="256" mime-type="image/png" extension="png"/>
       <TileSets profile="mercator">
         <TileSet href="15" units-per-pixel="4.77731426696777" order="15"/>

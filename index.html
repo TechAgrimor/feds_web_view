@@ -892,7 +892,7 @@
             center: currentLoc.center,
             zoom: 18,
             minZoom: 15,
-            maxZoom: 24,
+            maxZoom: 21,
             zoomControl: true,
             renderer: canvasRenderer
         });
@@ -902,13 +902,13 @@
         // Base Maps
         const baseMaps = {
             "sat-streets": L.tileLayer(`https://api.mapbox.com/styles/v1/mapbox/satellite-streets-v12/tiles/{z}/{x}/{y}?access_token=${mapboxToken}`, {
-                tileSize: 512, zoomOffset: -1, maxZoom: 22, attribution: '&copy; Mapbox &copy; OpenStreetMap'
+                tileSize: 512, zoomOffset: -1, maxZoom: 21, attribution: '&copy; Mapbox &copy; OpenStreetMap'
             }),
             "dark": L.tileLayer(`https://api.mapbox.com/styles/v1/mapbox/dark-v11/tiles/{z}/{x}/{y}?access_token=${mapboxToken}`, {
-                tileSize: 512, zoomOffset: -1, maxZoom: 22, attribution: '&copy; Mapbox &copy; OpenStreetMap'
+                tileSize: 512, zoomOffset: -1, maxZoom: 21, attribution: '&copy; Mapbox &copy; OpenStreetMap'
             }),
             "streets": L.tileLayer(`https://api.mapbox.com/styles/v1/mapbox/streets-v12/tiles/{z}/{x}/{y}?access_token=${mapboxToken}`, {
-                tileSize: 512, zoomOffset: -1, maxZoom: 22, attribution: '&copy; Mapbox &copy; OpenStreetMap'
+                tileSize: 512, zoomOffset: -1, maxZoom: 21, attribution: '&copy; Mapbox &copy; OpenStreetMap'
             })
         };
 
@@ -945,7 +945,7 @@
             tiledLayer = L.tileLayer(tilesUrl, {
                 tms: true,
                 minZoom: 15,
-                maxZoom: 24,
+                maxZoom: 21,
                 maxNativeZoom: 22,
                 opacity: currentOpacity,
                 zIndex: 10,
